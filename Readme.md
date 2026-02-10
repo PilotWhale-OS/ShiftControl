@@ -201,9 +201,9 @@ Trust alerts are **decision aids**, not automatic punishments.
 
 The goal is to balance:
 
-✔ volunteer autonomy  
-✔ fairness  
-✔ operational reliability
+- volunteer autonomy  
+- fairness  
+- operational reliability
 
 ## 🏗 Architecture
 
@@ -219,11 +219,11 @@ Main goals:
 
 ### Core Principles
 
-✔ asynchronous communication
-✔ database per service
-✔ eventual consistency
-✔ API first
-✔ IdP independence
+- asynchronous communication
+- database per service
+- eventual consistency
+- API first
+- IdP independence
 
 
 ### Services
