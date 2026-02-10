@@ -76,7 +76,7 @@ Groups shifts into departments (e.g. Stage, Security, Logistics).
 Each plan has separate permissions and invite links.
 
 
-## 🔄 Workflow
+## Workflow
 
 ### 1. Event Setup
 
@@ -162,7 +162,7 @@ No assignment change happens silently.
 Administrators can trace **every change** across the system for accountability and debugging.
 
 
-## 🎤 Pretalx Integration
+## Pretalx Integration
 
 ShiftControl can connect to any Pretalx instance.
 
