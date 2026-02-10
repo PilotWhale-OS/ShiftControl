@@ -8,7 +8,7 @@ It enables planners to create shift structures, while giving volunteers modern *
 
 The system is built using **event-driven microservices** and integrates with **Pretalx** for schedule synchronization and **Keycloak** for identity management.
 
-## ✨ Features
+## Features
 
 ### For Planners
 
@@ -38,7 +38,7 @@ The system is built using **event-driven microservices** and integrates with **P
 * Event-driven communication via RabbitMQ
 
 
-## 🧠 Domain Overview
+## Domain Overview
 
 ### Event
 
@@ -112,14 +112,14 @@ Planners define:
 Volunteers can sign themselves into positions **if they match the required roles**.
 
 
-## 📅 Assignment Phases
+## Assignment Phases
 
-### 🔓 Self Signup
+### Self Signup
 
 * Volunteers may freely join and leave.
 * Ideal for early planning.
 
-### 👀 Supervised
+### Supervised
 
 * Position counts cannot change without approval.
 * Volunteers may:
@@ -127,12 +127,12 @@ Volunteers can sign themselves into positions **if they match the required roles
   * trade positions
   * create auctions (request someone else to take over)
 
-### 🔒 Locked
+### Locked
 
 * Any modification requires planner approval.
 
 
-## ⛔ Absence Management
+## Absence Management
 
 ### Time Constraints
 
@@ -146,7 +146,7 @@ If something unexpected happens:
 * planners receive notifications immediately
 
 
-## 🔔 Notifications
+## Notifications
 
 The system informs users via:
 
@@ -157,7 +157,7 @@ The system informs users via:
 No assignment change happens silently.
 
 
-## 🕵️ Audit Log
+## Audit Log
 
 Administrators can trace **every change** across the system for accountability and debugging.
 
@@ -174,7 +174,7 @@ Required:
 The system imports all events accessible by that key.
 Activities remain synchronized and read-only.
 
-## 🚨 Trust & Abuse Prevention
+## Trust & Abuse Prevention
 
 ShiftControl heavily relies on volunteer self-service.  
 To prevent misuse while still enabling flexibility, the system continuously evaluates user actions.
@@ -205,7 +205,7 @@ The goal is to balance:
 - fairness  
 - operational reliability
 
-# 🏗 Architecture
+# Architecture
 
 ShiftControl follows **event-driven design** and separates responsibilities into independent services.
 
@@ -251,7 +251,7 @@ Main goals:
 <img width="3378" height="1930" alt="ShiftControl Architecture excalidraw" src="https://github.com/user-attachments/assets/44bd6c7d-a022-4859-a666-0fd239973048" />
 
 
-## 🔐 Identity & Authentication
+## Identity & Authentication
 
 All user information is managed centrally in Keycloak.
 
@@ -272,7 +272,7 @@ Advantages:
 Backend communication uses JWT tokens.
 
 
-## 🧩 Technology Stack
+## Technology Stack
 
 | Area         | Technology         |
 | ------------ | ------------------ |
@@ -286,7 +286,7 @@ Backend communication uses JWT tokens.
 | Architecture | Event-Driven       |
 
 
-## 🚧 Project Status
+## Project Status
 
 ⚠ The project is currently under heavy refactoring.
 
@@ -300,6 +300,6 @@ We are in the process of:
 Docker Compose files and installation guides will follow.
 
 
-## ❤️ Vision
+## Vision
 
-ShiftControl aims to become a **modern, flexible and extensible volunteer coordination platform** that reduces organizational overhead while empowering communities.
+ShiftControl aims to become a modern, flexible and extensible volunteer coordination platform that reduces organizational overhead while empowering communities.
