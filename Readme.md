@@ -240,10 +240,10 @@ Main goals:
 ### Repository scheme
 - [ShiftControl Frontend](https://github.com/PilotWhale-OS/shiftcontrol-frontend)
 - [Java Backend Services](https://github.com/PilotWhale-OS/shiftcontrol-java-backend)
- - shiftservice
- - auditservice
- - trustservice
- - pretalx-sync
+  - shiftservice
+  - auditservice
+  - trustservice
+  - pretalx-sync
 - [Notification Service](https://github.com/PilotWhale-OS/shiftcontrol-notificationservice)
 
 ### High Level Architecture
