@@ -205,7 +205,7 @@ The goal is to balance:
 - fairness  
 - operational reliability
 
-## 🏗 Architecture
+# 🏗 Architecture
 
 ShiftControl follows **event-driven design** and separates responsibilities into independent services.
 
@@ -221,7 +221,6 @@ Main goals:
 
 - asynchronous communication
 - database per service
-- eventual consistency
 - API first
 - IdP independence
 
@@ -237,6 +236,15 @@ Main goals:
 * **Keycloak** → identity provider
 * **Traefik** → routing / ingress
 * **RabbitMQ** → event bus
+
+### Repository scheme
+- [ShiftControl Frontend](https://github.com/PilotWhale-OS/shiftcontrol-frontend)
+- [Java Backend Services](https://github.com/PilotWhale-OS/shiftcontrol-java-backend)
+ - shiftservice
+ - auditservice
+ - trustservice
+ - pretalx-sync
+- [Notification Service](https://github.com/PilotWhale-OS/shiftcontrol-notificationservice)
 
 ### High Level Architecture
 
