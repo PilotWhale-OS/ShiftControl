@@ -18,7 +18,8 @@ The system is built using **event-driven microservices** and integrates with **P
 * Supervise assignments close to the event
 * Approve or reject changes
 * Get notified about absences & emergencies
-* Full audit trail of all changes
+* Full audit trail of all changes+
+* Receive trust alerts about suspicious or abuse-prone behavior
 
 ### For Volunteers
 
@@ -173,6 +174,36 @@ Required:
 The system imports all events accessible by that key.
 Activities remain synchronized and read-only.
 
+## 🚨 Trust & Abuse Prevention
+
+ShiftControl heavily relies on volunteer self-service.  
+To prevent misuse while still enabling flexibility, the system continuously evaluates user actions.
+
+The **Trust Service** observes events such as:
+
+- frequent late cancellations  
+- repeated emergency absences  
+- unusual trading or auction patterns  
+- other behavior that may impact planning reliability  
+
+If predefined thresholds or heuristics are triggered, the system generates a **trust alert**.
+
+### What happens then?
+
+Planners are notified and can:
+
+- review the situation  
+- contact the volunteer  
+- deny future requests  
+- or simply keep an eye on the assignments  
+
+Trust alerts are **decision aids**, not automatic punishments.
+
+The goal is to balance:
+
+✔ volunteer autonomy  
+✔ fairness  
+✔ operational reliability
 
 ## 🏗 Architecture
 
@@ -198,7 +229,7 @@ Main goals:
 ### Services
 
 * **shiftservice** → core planning & assignments
-* **trustservice** → qualification & trust logic
+* **trustservice** → abuse detection via trust alerts
 * **auditservice** → system history
 * **notificationservice** → user notifications
 * **telegram-bot (WIP)** → external messaging
