@@ -12,6 +12,8 @@ services:
     command:
       - start
       - --log-level=INFO
+    volumes:
+      - keycloak-data:/data
     networks:
       - shiftcontrol
       - traefik-nw
@@ -74,3 +76,4 @@ volumes:
   postgres-data:
   pgadmin-data:
   rabbitmq-data:
+  keycloak-data:

@@ -7,6 +7,7 @@ services:
       - traefik-nw
     labels:
       - traefik.enable=true
+      - traefik.docker.network=traefik-nw
       - traefik.http.routers.frontend.rule=Host(`frontend.shiftcontrol.example.com`)
       - traefik.http.routers.frontend.entrypoints=websecure
       - traefik.http.services.frontend.loadbalancer.server.port=8080
