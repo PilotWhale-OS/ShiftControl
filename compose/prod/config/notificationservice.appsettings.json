@@ -32,7 +32,7 @@
     "BaseUrl": "http://keycloak:8080/",
     "ClientId": "internal",
     "ClientSecret": "3mnwKdFacOw8DiTfcCHHSVVMiHjzIoms",
-    "Realm": "dev"
+    "Realm": "prod"
   },
   "Shiftservice": {
     "BaseUrl": "http://shiftservice:8080/"
