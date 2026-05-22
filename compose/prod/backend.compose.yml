@@ -1,0 +1,82 @@
+services:
+
+  shiftservice:
+    image: "ghcr.io/pilotwhale-os/shiftcontrol/shiftservice:latest"
+    container_name: "shiftcontrol-shiftservice"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shiftservice
+      SPRING_DATASOURCE_USERNAME: shiftcontrol
+      SPRING_DATASOURCE_PASSWORD: password
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-nw
+      - traefik.http.routers.shiftservice.entrypoints=websecure
+      - traefik.http.routers.shiftservice.rule=Host(`shiftservice.shiftcontrol.example.com`)
+      - traefik.http.services.shiftservice.loadbalancer.server.port=8080
+    volumes:
+      - ./config/shiftservice.application.yml:/app/application.yml
+    networks:
+      - shiftcontrol
+      - traefik-nw
+
+  notificationservice:
+    image: "ghcr.io/pilotwhale-os/shiftcontrol/notificationservice:latest"
+    container_name: "shiftcontrol-notificationservice"
+    depends_on:
+      - shiftservice
+    environment:
+      - EMPTY=empty
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-nw
+      - traefik.http.routers.notificationservice.entrypoints=websecure
+      - traefik.http.routers.notificationservice.rule=Host(`notificationservice.shiftcontrol.example.com`)
+      - traefik.http.services.notificationservice.loadbalancer.server.port=8080
+    volumes:
+      - ./config/notificationservice.appsettings.json:/app/appsettings.json
+    networks:
+      - shiftcontrol
+      - traefik-nw
+
+  auditservice:
+    image: "ghcr.io/pilotwhale-os/shiftcontrol/auditservice:latest"
+    container_name: "shiftcontrol-auditservice"
+    depends_on:
+      - shiftservice
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shiftservice
+      SPRING_DATASOURCE_USERNAME: shiftcontrol
+      SPRING_DATASOURCE_PASSWORD: password
+    volumes:
+      - ./config/auditservice.application.yml:/app/application.yml
+    networks:
+      - shiftcontrol
+      - traefik-nw
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-nw
+      - traefik.http.routers.auditservice.entrypoints=websecure
+      - traefik.http.routers.auditservice.rule=Host(`auditservice.shiftcontrol.example.com`)
+      - traefik.http.services.auditservice.loadbalancer.server.port=8089
+
+  trustservice:
+    image: "ghcr.io/pilotwhale-os/shiftcontrol/trustservice:latest"
+    container_name: "shiftcontrol-trustservice"
+    depends_on:
+      - shiftservice
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shiftservice
+      SPRING_DATASOURCE_USERNAME: shiftcontrol
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+    volumes:
+      - ./config/trustservice.application.yml:/app/application.yml
+    networks:
+      - shiftcontrol
+
+networks:
+  shiftcontrol:
+    external: true
+  traefik-nw:
+    external: true

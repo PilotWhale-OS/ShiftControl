@@ -1,0 +1,21 @@
+spring:
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: shiftcontrol
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: none
+  data:
+    redis:
+      host: redis
+      port: 6379
+
+trust:
+  rabbitmq:
+    exchange: shiftcontrol
+    queue: trust-service
+    routing-key: shiftcontrol.#
+
+

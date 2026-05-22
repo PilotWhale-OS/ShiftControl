@@ -1,0 +1,19 @@
+services:
+  shiftcontrol-frontend:
+    image: "ghcr.io/pilotwhale-os/shiftcontrol/dashboard:latest"
+    container_name: "shiftcontrol-dashboard"
+    networks:
+      - shiftcontrol
+      - traefik-nw
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.frontend.rule=Host(`frontend.shiftcontrol.example.com`)
+      - traefik.http.routers.frontend.entrypoints=websecure
+      - traefik.http.services.frontend.loadbalancer.server.port=8080
+      # - traefik.http.routers.frontend.middlewares=jwt-auth@file
+
+networks:
+  shiftcontrol:
+    external: true
+  traefik-nw:
+    external: true

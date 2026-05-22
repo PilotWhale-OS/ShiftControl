@@ -1,6 +1,7 @@
 Local Deployment of ShiftControl
 === 
-To test the features of ShiftControl locally, this docker compose setup contains ready-to-use configuration using the public images.
+To test the features of ShiftControl locally, this docker compose setup contains ready-to-use configuration using the public images.  
+Test users and data are pre-configured.
 This setup is not intended for production use.
 
 ## Starting the Application
@@ -28,7 +29,8 @@ The default Keycloak admin credentials are:
 
 There are also some pre-configured users for testing purposes:
 - Username: testadmin, Password: test
-- Username: testuser, Password: test 
+- Username: testuser, Password: test  
+
 For more user credentials, refer to `config/realm-dev.json`
 
 ## Configuration
