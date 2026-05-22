@@ -1,0 +1,17 @@
+http:
+  middlewares:
+    jwt-auth:
+      plugin:
+        jwt:
+          Required: true                     # JWT is required
+          Keys:
+            - "http://keycloak:8080/realms/dev/protocol/openid-connect/certs" # JWKS url
+          PayloadFields:
+            - exp                            # validate expiration
+            - iat                            # optionally validate issued at
+          # JwtHeaders:
+          #   X-User-Sub: sub                  # pass `sub` claim as header X-User-Sub
+          #  X-User-Email: email              # pass `email` claim as header X-User-Email
+          JwtSources:
+            - type: bearer                   # look for token in Authorization header
+              key: Authorization

@@ -1,0 +1,26 @@
+spring:
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: shiftcontrol
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: none
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://keycloak:8080/realms/dev
+
+keycloak:
+  auth-server-url: http://keycloak:8080/
+  auth-realm: dev
+  allowed-issuers:
+    - http://keycloak.127.0.0.1.nip.io/realms/dev
+    - http://keycloak:8080/realms/dev
+  client:
+    id: admin-cli
+    realm: master
+    username: admin
+    password: admin

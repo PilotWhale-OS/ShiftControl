@@ -1,0 +1,23 @@
+spring:
+  jackson:
+    default-property-inclusion: non_null
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://keycloak:8080/realms/dev
+logging:
+  level:
+    root: INFO
+
+keycloak:
+  auth-server-url: http://keycloak:8080/
+  auth-realm: dev
+  allowed-issuers:
+    - http://keycloak.127.0.0.1.nip.io/realms/dev
+    - http://keycloak:8080/realms/dev
+  client:
+    id: admin-cli
+    realm: master
+    username: admin
+    password: admin
