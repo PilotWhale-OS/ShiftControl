@@ -16,6 +16,10 @@ find . -type f -exec sed -i 's/shiftcontrol.example.com/domain-name/g' {} +
 find . -type f -exec sed -i 's/traefik-nw/treafik-network-name/g' {} +
 ```
 
+After infra has started, log in to keycloak using the default credentials as per docker compose, and import the "prod" realm in as provided in `/config/realm.json` (after replacing the placeholders with sed).  
+To assign application admin privileges to an user, add the user attribute `userType` with the value `ADMIN`.  
+Volunteers may have no value or `ASSIGNED`.
+
 ## Starting the Application
 Make sure your Traefik instance is running and configured correctly. To start the application, start the infrastructure first:
 ```bash
