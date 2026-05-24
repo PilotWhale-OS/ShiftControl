@@ -12,9 +12,9 @@ logging:
 
 keycloak:
   auth-server-url: http://keycloak:8080/
-  auth-realm: dev
+  auth-realm: prod
   allowed-issuers:
-    - http://keycloak.shiftcontrol.example.com/realms/prod
+    - https://keycloak.shiftcontrol.example.com/realms/prod
     - http://keycloak:8080/realms/prod
   client:
     id: admin-cli

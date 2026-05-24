@@ -8,14 +8,14 @@
   "SignalR": {
     "HostPort": 8080,
     "AllowedOrigins": [
-      "http://frontend.shiftcontrol.example.com"
+      "https://frontend.shiftcontrol.example.com"
     ]
   },
   "Jwt": {
     "Authority": "http://keycloak:8080/realms/dev",
     "Issuers": [
       "http://keycloak:8080/realms/dev",
-      "http://keycloak.shiftcontrol.example.com/realms/dev"
+      "https://keycloak.shiftcontrol.example.com/realms/dev"
     ]
   },
   "RabbitMQ": {
@@ -38,7 +38,7 @@
     "BaseUrl": "http://shiftservice:8080/"
   },
   "Frontend": {
-    "BaseUrl": "http://frontend.shiftcontrol.example.com"
+    "BaseUrl": "https://frontend.shiftcontrol.example.com"
   },
   "Email": {
     "EnableSending": false,

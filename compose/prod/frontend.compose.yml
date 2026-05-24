@@ -2,6 +2,13 @@ services:
   shiftcontrol-frontend:
     image: "ghcr.io/pilotwhale-os/shiftcontrol/dashboard:latest"
     container_name: "shiftcontrol-dashboard"
+    environment:
+      KEYCLOAK_URL: https://keycloak.shiftcontrol.example.com
+      KEYCLOAK_REALM: prod
+      KEYCLOAK_CLIENT_ID: frontend
+      SHIFTSERVICE_BASE_PATH: https://shiftservice.shiftcontrol.example.com
+      AUDITSERVICE_BASE_PATH: https://auditservice.shiftcontrol.example.com
+      NOTIFICATIONSERVICE_BASE_PATH: https://notificationservice.shiftcontrol.example.com
     networks:
       - shiftcontrol
       - traefik-nw

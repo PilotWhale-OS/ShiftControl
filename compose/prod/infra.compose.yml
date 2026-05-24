@@ -1,7 +1,8 @@
 services:
   keycloak:
     image: "quay.io/keycloak/keycloak:26.0.0"
-    container_name: "keycloak"
+    container_name: "shiftcontrol-keycloak"
+    hostname: "keycloak"
     environment:
       KEYCLOAK_ADMIN: "admin"
       KEYCLOAK_ADMIN_PASSWORD: "admin"
@@ -26,7 +27,8 @@ services:
 
   postgres:
     image: "postgres:latest"
-    container_name: "postgres"
+    container_name: "shiftcontrol-postgres"
+    hostname: "postgres"
     environment:
       POSTGRES_USER: "shiftcontrol"
       POSTGRES_PASSWORD: "password"
@@ -56,8 +58,8 @@ services:
 
   rabbitmq:
     image: rabbitmq:4-management
-    container_name: rabbitmq
-    hostname: rabbitmq
+    container_name: "rabbitmq"
+    hostname: "rabbitmq"
     environment:
       RABBITMQ_DEFAULT_USER: shiftcontrol
       RABBITMQ_DEFAULT_PASS: password
