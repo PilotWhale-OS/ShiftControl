@@ -1,4 +1,4 @@
-Local Deployment of ShiftControl
+Production Deployment of ShiftControl
 === 
 TODO
 
