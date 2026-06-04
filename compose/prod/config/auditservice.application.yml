@@ -2,8 +2,8 @@ spring:
   rabbitmq:
     host: rabbitmq
     port: 5672
-    username: shiftcontrol
-    password: password
+    username: ${RABBITMQ_DEFAULT_USER:shiftcontrol}
+    password: ${RABBITMQ_DEFAULT_PASS}
   jpa:
     hibernate:
       ddl-auto: none
@@ -22,8 +22,8 @@ keycloak:
   client:
     id: admin-cli
     realm: master
-    username: admin
-    password: admin
+    username: ${KEYCLOAK_ADMIN_USER:admin}
+    password: ${KEYCLOAK_ADMIN_PASSWORD}
 
 shiftcontrol:
   domain: ${SHIFTCONTROL_DOMAIN:shiftcontrol.example.com}

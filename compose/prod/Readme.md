@@ -14,18 +14,32 @@ Set the base domain once, either in your shell or in a local `.env` file next to
 ```bash
 SHIFTCONTROL_DOMAIN=shiftcontrol.example.com
 SHIFTCONTROL_KEYCLOAK_DOMAIN=keycloak.shiftcontrol.example.com
+KEYCLOAK_ADMIN_USER=admin
+KEYCLOAK_ADMIN_PASSWORD=change-me
+POSTGRES_USER=shiftcontrol
+POSTGRES_PASSWORD=change-me
+POSTGRES_DB=shiftservice
+NOTIFICATIONSERVICE_POSTGRES_DB=notificationservice
+PGADMIN_DEFAULT_EMAIL=admin@admin.com
+PGADMIN_DEFAULT_PASSWORD=change-me
+RABBITMQ_DEFAULT_USER=shiftcontrol
+RABBITMQ_DEFAULT_PASS=change-me
+KEYCLOAK_INTERNAL_CLIENT_SECRET=change-me
+SMTP_PASSWORD=change-me
 ```
 
-Every hostname is derived from these two values, so changing the environment only requires one or two edits.
-The Spring Boot services read the same variable directly from their YAML config, while the ASP.NET NotificationService receives its domain-specific settings through Docker environment overrides.
+The Spring Boot services read these variables directly from their YAML config, while the ASP.NET NotificationService receives its domain-specific and secret settings through Docker environment overrides.
+Required secrets use Docker Compose's `${VAR:?message}` form, so `docker compose` will fail fast with a clear error if a required secret is missing.
 
-If you also need to replace config placeholders, run:
+Only `config/realm.json` still needs hostname replacement before importing it into Keycloak. Do not run a repo-wide `sed`, because several configs intentionally contain environment placeholders now.
+
+Replace the placeholder hostnames in that one file only:
 ```bash
-find . -type f -exec sed -i 's/shiftcontrol.example.com/domain-name/g' {} +
+sed -i 's/shiftcontrol.example.com/your-domain.example.com/g' config/realm.json
 ```
 
-After infra has started, log in to keycloak using the default credentials as per docker compose, and import the "prod" realm in as provided in `/config/realm.json` (after replacing the placeholders with sed).  
-To assign application admin privileges to an user, add the user attribute `userType` with the value `ADMIN`.  
+After infra has started, log in to Keycloak using the admin credentials from `.env`, then import the `prod` realm from `config/realm.json`.  
+To assign application admin privileges to a user, add the user attribute `userType` with the value `ADMIN`.  
 Volunteers may have no value or `ASSIGNED`.
 
 ## Starting the Application

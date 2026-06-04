@@ -31,17 +31,18 @@ services:
     container_name: shiftcontrol-keycloak
     hostname: keycloak
     environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in compose/prod/.env}
       KC_HOSTNAME: ${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}
       KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
       KC_PROXY_HEADERS: xforwarded
       PROXY_ADDRESS_FORWARDING: "true"
     command:
       - start
       - --log-level=INFO
     volumes:
-      - keycloak-data:/data
+      - keycloak-data:/opt/keycloak/data
     networks:
       - shiftcontrol
     labels:
@@ -51,26 +52,41 @@ services:
       - traefik.http.routers.keycloak.rule=Host(`${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}`)
       - traefik.http.routers.keycloak.tls=true
       - traefik.http.services.keycloak.loadbalancer.server.port=8080
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080;echo -e \"GET /health/ready HTTP/1.1\r\nhost: http://localhost\r\nConnection: close\r\n\r\n\" >&3;grep \"HTTP/1.1 200 OK\" <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 45s
 
   postgres:
     image: postgres:latest
     container_name: shiftcontrol-postgres
     hostname: postgres
     environment:
-      POSTGRES_USER: shiftcontrol
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: shiftservice
+      POSTGRES_USER: ${POSTGRES_USER:-shiftcontrol}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in compose/prod/.env}
+      POSTGRES_DB: ${POSTGRES_DB:-shiftservice}
     networks:
       - shiftcontrol
     volumes:
       - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-shiftcontrol} -d ${POSTGRES_DB:-shiftservice}"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
 
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: shiftcontrol-pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@admin.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:?Set PGADMIN_DEFAULT_PASSWORD in compose/prod/.env}
     volumes:
       - pgadmin-data:/var/lib/pgadmin
     networks:
@@ -88,28 +104,47 @@ services:
     container_name: rabbitmq
     hostname: rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: shiftcontrol
-      RABBITMQ_DEFAULT_PASS: password
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-shiftcontrol}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS in compose/prod/.env}
     networks:
       - shiftcontrol
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
   redis:
     image: redis:7-alpine
     container_name: shiftcontrol-redis
     networks:
       - shiftcontrol
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
 
   shiftservice:
     image: ghcr.io/pilotwhale-os/shiftcontrol/shiftservice:latest
     container_name: shiftcontrol-shiftservice
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
     environment:
       SHIFTCONTROL_DOMAIN: ${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
       SHIFTCONTROL_KEYCLOAK_DOMAIN: ${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shiftservice
-      SPRING_DATASOURCE_USERNAME: shiftcontrol
-      SPRING_DATASOURCE_PASSWORD: password
+      KEYCLOAK_ADMIN_USER: ${KEYCLOAK_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in compose/prod/.env}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-shiftservice}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-shiftcontrol}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in compose/prod/.env}
     volumes:
       - ./config/shiftservice.application.yml:/app/application.yml
     networks:
@@ -126,7 +161,14 @@ services:
     image: ghcr.io/pilotwhale-os/shiftcontrol/notificationservice:latest
     container_name: shiftcontrol-notificationservice
     depends_on:
-      - shiftservice
+      shiftservice:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
     environment:
       SHIFTCONTROL_DOMAIN: ${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
       SHIFTCONTROL_KEYCLOAK_DOMAIN: ${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}
@@ -136,6 +178,11 @@ services:
       SignalR__AllowedOrigins__0: https://frontend.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
       Jwt__Issuers__1: https://${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}/realms/prod
       Frontend__BaseUrl: https://frontend.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
+      RabbitMQ__UserName: ${RABBITMQ_DEFAULT_USER:-shiftcontrol}
+      RabbitMQ__Password: ${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS in compose/prod/.env}
+      Db__ConnectionString: Server=postgres;Port=5432;Database=${NOTIFICATIONSERVICE_POSTGRES_DB:-notificationservice};User Id=${POSTGRES_USER:-shiftcontrol};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in compose/prod/.env};
+      Keycloak__ClientSecret: ${KEYCLOAK_INTERNAL_CLIENT_SECRET:?Set KEYCLOAK_INTERNAL_CLIENT_SECRET in compose/prod/.env}
+      Email__SmtpPassword: ${SMTP_PASSWORD:?Set SMTP_PASSWORD in compose/prod/.env}
     volumes:
       - ./config/notificationservice.appsettings.json:/app/appsettings.json
     networks:
@@ -152,13 +199,24 @@ services:
     image: ghcr.io/pilotwhale-os/shiftcontrol/auditservice:latest
     container_name: shiftcontrol-auditservice
     depends_on:
-      - shiftservice
+      shiftservice:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
     environment:
       SHIFTCONTROL_DOMAIN: ${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
       SHIFTCONTROL_KEYCLOAK_DOMAIN: ${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shiftservice
-      SPRING_DATASOURCE_USERNAME: shiftcontrol
-      SPRING_DATASOURCE_PASSWORD: password
+      KEYCLOAK_ADMIN_USER: ${KEYCLOAK_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in compose/prod/.env}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-shiftcontrol}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS in compose/prod/.env}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-shiftservice}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-shiftcontrol}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in compose/prod/.env}
     volumes:
       - ./config/auditservice.application.yml:/app/application.yml
     networks:
@@ -175,13 +233,22 @@ services:
     image: ghcr.io/pilotwhale-os/shiftcontrol/trustservice:latest
     container_name: shiftcontrol-trustservice
     depends_on:
-      - shiftservice
+      shiftservice:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       SHIFTCONTROL_DOMAIN: ${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
       SHIFTCONTROL_KEYCLOAK_DOMAIN: ${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shiftservice
-      SPRING_DATASOURCE_USERNAME: shiftcontrol
-      SPRING_DATASOURCE_PASSWORD: password
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-shiftcontrol}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS in compose/prod/.env}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-shiftservice}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-shiftcontrol}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in compose/prod/.env}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
     volumes:

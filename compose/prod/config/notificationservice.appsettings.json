@@ -22,16 +22,16 @@
     "HostName": "rabbitmq",
     "Port": 5672,
     "UserName": "shiftcontrol",
-    "Password": "password"
+    "Password": "change-me"
   },
   "Db": {
-    "ConnectionString": "Server=postgres;Port=5432;Database=notificationservice;User Id=shiftcontrol;Password=password;",
+    "ConnectionString": "Server=postgres;Port=5432;Database=notificationservice;User Id=shiftcontrol;Password=change-me;",
     "EnsureCreated": true
   },
   "Keycloak": {
     "BaseUrl": "http://keycloak:8080/",
     "ClientId": "internal",
-    "ClientSecret": "3mnwKdFacOw8DiTfcCHHSVVMiHjzIoms",
+    "ClientSecret": "change-me",
     "Realm": "prod"
   },
   "Shiftservice": {
@@ -45,6 +45,6 @@
     "SmtpHost": "smtp.gmail.com",
     "SmtpPort": 587,
     "SmtpUsername": "email@example.com",
-    "SmtpPassword": "examplepassword"
+    "SmtpPassword": "change-me"
   }
 }
