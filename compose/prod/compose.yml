@@ -40,9 +40,11 @@ services:
       PROXY_ADDRESS_FORWARDING: "true"
     command:
       - start
+      - --import-realm
       - --log-level=INFO
     volumes:
       - keycloak-data:/opt/keycloak/data
+      - ./config/realm.json:/opt/keycloak/data/import/prod-realm.json:ro
     networks:
       - shiftcontrol
     labels:
