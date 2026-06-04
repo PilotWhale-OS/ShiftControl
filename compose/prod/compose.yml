@@ -1,0 +1,236 @@
+services:
+  traefik:
+    image: traefik:latest
+    container_name: shiftcontrol-prod-traefik
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.http.tls=true
+      - --api.dashboard=true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - shiftcontrol
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.traefik.entrypoints=websecure
+      - traefik.http.routers.traefik.rule=Host(`traefik.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}`)
+      - traefik.http.routers.traefik.service=api@internal
+      - traefik.http.routers.traefik.tls=true
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.0
+    container_name: shiftcontrol-keycloak
+    hostname: keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: ${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      PROXY_ADDRESS_FORWARDING: "true"
+    command:
+      - start
+      - --log-level=INFO
+    volumes:
+      - keycloak-data:/data
+    networks:
+      - shiftcontrol
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=shiftcontrol
+      - traefik.http.routers.keycloak.entrypoints=websecure
+      - traefik.http.routers.keycloak.rule=Host(`${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}`)
+      - traefik.http.routers.keycloak.tls=true
+      - traefik.http.services.keycloak.loadbalancer.server.port=8080
+
+  postgres:
+    image: postgres:latest
+    container_name: shiftcontrol-postgres
+    hostname: postgres
+    environment:
+      POSTGRES_USER: shiftcontrol
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: shiftservice
+    networks:
+      - shiftcontrol
+    volumes:
+      - postgres-data:/var/lib/postgresql
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: shiftcontrol-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - shiftcontrol
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=shiftcontrol
+      - traefik.http.routers.pgadmin.entrypoints=websecure
+      - traefik.http.routers.pgadmin.rule=Host(`pgadmin.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}`)
+      - traefik.http.routers.pgadmin.tls=true
+      - traefik.http.services.pgadmin.loadbalancer.server.port=80
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: rabbitmq
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: shiftcontrol
+      RABBITMQ_DEFAULT_PASS: password
+    networks:
+      - shiftcontrol
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
+  redis:
+    image: redis:7-alpine
+    container_name: shiftcontrol-redis
+    networks:
+      - shiftcontrol
+
+  shiftservice:
+    image: ghcr.io/pilotwhale-os/shiftcontrol/shiftservice:latest
+    container_name: shiftcontrol-shiftservice
+    environment:
+      SHIFTCONTROL_DOMAIN: ${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
+      SHIFTCONTROL_KEYCLOAK_DOMAIN: ${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shiftservice
+      SPRING_DATASOURCE_USERNAME: shiftcontrol
+      SPRING_DATASOURCE_PASSWORD: password
+    volumes:
+      - ./config/shiftservice.application.yml:/app/application.yml
+    networks:
+      - shiftcontrol
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=shiftcontrol
+      - traefik.http.routers.shiftservice.entrypoints=websecure
+      - traefik.http.routers.shiftservice.rule=Host(`shiftservice.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}`)
+      - traefik.http.routers.shiftservice.tls=true
+      - traefik.http.services.shiftservice.loadbalancer.server.port=8080
+
+  notificationservice:
+    image: ghcr.io/pilotwhale-os/shiftcontrol/notificationservice:latest
+    container_name: shiftcontrol-notificationservice
+    depends_on:
+      - shiftservice
+    environment:
+      SHIFTCONTROL_DOMAIN: ${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
+      SHIFTCONTROL_KEYCLOAK_DOMAIN: ${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}
+      EMPTY: empty
+      Jwt__Authority: http://keycloak:8080/realms/prod
+      Jwt__Issuers__0: http://keycloak:8080/realms/prod
+      SignalR__AllowedOrigins__0: https://frontend.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
+      Jwt__Issuers__1: https://${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}/realms/prod
+      Frontend__BaseUrl: https://frontend.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
+    volumes:
+      - ./config/notificationservice.appsettings.json:/app/appsettings.json
+    networks:
+      - shiftcontrol
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=shiftcontrol
+      - traefik.http.routers.notificationservice.entrypoints=websecure
+      - traefik.http.routers.notificationservice.rule=Host(`notificationservice.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}`)
+      - traefik.http.routers.notificationservice.tls=true
+      - traefik.http.services.notificationservice.loadbalancer.server.port=8080
+
+  auditservice:
+    image: ghcr.io/pilotwhale-os/shiftcontrol/auditservice:latest
+    container_name: shiftcontrol-auditservice
+    depends_on:
+      - shiftservice
+    environment:
+      SHIFTCONTROL_DOMAIN: ${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
+      SHIFTCONTROL_KEYCLOAK_DOMAIN: ${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shiftservice
+      SPRING_DATASOURCE_USERNAME: shiftcontrol
+      SPRING_DATASOURCE_PASSWORD: password
+    volumes:
+      - ./config/auditservice.application.yml:/app/application.yml
+    networks:
+      - shiftcontrol
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=shiftcontrol
+      - traefik.http.routers.auditservice.entrypoints=websecure
+      - traefik.http.routers.auditservice.rule=Host(`auditservice.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}`)
+      - traefik.http.routers.auditservice.tls=true
+      - traefik.http.services.auditservice.loadbalancer.server.port=8089
+
+  trustservice:
+    image: ghcr.io/pilotwhale-os/shiftcontrol/trustservice:latest
+    container_name: shiftcontrol-trustservice
+    depends_on:
+      - shiftservice
+    environment:
+      SHIFTCONTROL_DOMAIN: ${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
+      SHIFTCONTROL_KEYCLOAK_DOMAIN: ${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shiftservice
+      SPRING_DATASOURCE_USERNAME: shiftcontrol
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+    volumes:
+      - ./config/trustservice.application.yml:/app/application.yml
+    networks:
+      - shiftcontrol
+
+  shiftcontrol-frontend:
+    image: ghcr.io/pilotwhale-os/shiftcontrol/dashboard:latest
+    container_name: shiftcontrol-dashboard
+    environment:
+      SHIFTCONTROL_KEYCLOAK_DOMAIN: ${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}
+      KEYCLOAK_URL: https://${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}
+      KEYCLOAK_REALM: prod
+      KEYCLOAK_CLIENT_ID: frontend
+      SHIFTSERVICE_BASE_PATH: https://shiftservice.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
+      AUDITSERVICE_BASE_PATH: https://auditservice.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
+      NOTIFICATIONSERVICE_BASE_PATH: https://notificationservice.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
+    networks:
+      - shiftcontrol
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=shiftcontrol
+      - traefik.http.routers.frontend.rule=Host(`frontend.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}`)
+      - traefik.http.routers.frontend.entrypoints=websecure
+      - traefik.http.routers.frontend.tls=true
+      - traefik.http.services.frontend.loadbalancer.server.port=8080
+      # - traefik.http.routers.frontend.middlewares=jwt-auth@file
+
+  # Optional: use a Cloudflare Tunnel instead of publishing ports 80/443 on Traefik.
+  # Uncomment this service, set CLOUDFLARE_TUNNEL_TOKEN, and point the tunnel at traefik:80.
+  # cloudflared:
+  #   image: cloudflare/cloudflared:latest
+  #   container_name: shiftcontrol-cloudflared
+  #   restart: unless-stopped
+  #   command: tunnel --no-autoupdate run
+  #   environment:
+  #     TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
+  #   depends_on:
+  #     - traefik
+  #   networks:
+  #     - shiftcontrol
+
+networks:
+  shiftcontrol:
+    external: true
+
+volumes:
+  postgres-data:
+  pgadmin-data:
+  rabbitmq-data:
+  keycloak-data:

@@ -14,10 +14,14 @@ keycloak:
   auth-server-url: http://keycloak:8080/
   auth-realm: prod
   allowed-issuers:
-    - https://keycloak.shiftcontrol.example.com/realms/prod
+    - https://${SHIFTCONTROL_KEYCLOAK_DOMAIN:keycloak.shiftcontrol.example.com}/realms/prod
     - http://keycloak:8080/realms/prod
   client:
     id: admin-cli
     realm: master
     username: admin
     password: admin
+
+shiftcontrol:
+  domain: ${SHIFTCONTROL_DOMAIN:shiftcontrol.example.com}
+  keycloak-domain: ${SHIFTCONTROL_KEYCLOAK_DOMAIN:keycloak.shiftcontrol.example.com}

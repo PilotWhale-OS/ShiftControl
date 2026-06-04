@@ -1,19 +1,27 @@
 Production Deployment of ShiftControl
 === 
-TODO
+This folder now contains a single production compose file: `compose.yml`.
 
 ## Prerequisites
-It is assumed that following is set up:
-- Traefik in an external docker network
-- SSL entrypoint `websecure`, exposing port 443  
-Depending on the Traefik setup, labels may need to be adjusted.
+It is assumed that Docker and Docker Compose are installed.
+
+The bundled Traefik publishes ports 80 and 443 and exposes the application services by hostname.
+If you prefer Cloudflare Tunnel, a commented example is included in `compose.yml`.
  
 ## Configuration
 
-Configure domain names and Traefik network name:
+Set the base domain once, either in your shell or in a local `.env` file next to `compose.yml`:
+```bash
+SHIFTCONTROL_DOMAIN=shiftcontrol.example.com
+SHIFTCONTROL_KEYCLOAK_DOMAIN=keycloak.shiftcontrol.example.com
+```
+
+Every hostname is derived from these two values, so changing the environment only requires one or two edits.
+The Spring Boot services read the same variable directly from their YAML config, while the ASP.NET NotificationService receives its domain-specific settings through Docker environment overrides.
+
+If you also need to replace config placeholders, run:
 ```bash
 find . -type f -exec sed -i 's/shiftcontrol.example.com/domain-name/g' {} +
-find . -type f -exec sed -i 's/traefik-nw/treafik-network-name/g' {} +
 ```
 
 After infra has started, log in to keycloak using the default credentials as per docker compose, and import the "prod" realm in as provided in `/config/realm.json` (after replacing the placeholders with sed).  
@@ -21,12 +29,9 @@ To assign application admin privileges to an user, add the user attribute `userT
 Volunteers may have no value or `ASSIGNED`.
 
 ## Starting the Application
-Make sure your Traefik instance is running and configured correctly. To start the application, start the infrastructure first:
+Start the full production stack with a single command:
 ```bash
-docker compose -f infrastructure.yml up -d
+docker compose up -d
 ```
-This will start keycloak and data services. After the infrastructure is ready, you can start the application itself:
-```bash
-docker compose -f frontend.yml up -d
-docker compose -f backend.yml up -d
-```
+
+If you want to use Cloudflare Tunnel instead of publishing ports on Traefik, uncomment the `cloudflared` service in `compose.yml` and set `CLOUDFLARE_TUNNEL_TOKEN`.
