@@ -266,9 +266,9 @@ services:
       KEYCLOAK_URL: https://${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}
       KEYCLOAK_REALM: prod
       KEYCLOAK_CLIENT_ID: frontend
-      SHIFTSERVICE_BASE_PATH: https://shiftservice.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
-      AUDITSERVICE_BASE_PATH: https://auditservice.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
-      NOTIFICATIONSERVICE_BASE_PATH: https://notificationservice.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
+      SHIFTSERVICE_BASE_PATH: https://${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}/shiftservice
+      AUDITSERVICE_BASE_PATH: https://${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}/auditservice
+      NOTIFICATIONSERVICE_BASE_PATH: https://${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}/notifications
     networks:
       - shiftcontrol
     labels:
