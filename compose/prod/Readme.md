@@ -5,11 +5,6 @@ This folder now contains a single production compose file: `compose.yml`.
 ## Prerequisites
 It is assumed that Docker and Docker Compose are installed.
 
-The compose file uses an external Docker network named `shiftcontrol`, so create it once before the first start:
-```bash
-docker network create shiftcontrol
-```
-
 The bundled Traefik publishes ports 80 and 443 and exposes exactly two public hostnames:
 - `https://${SHIFTCONTROL_DOMAIN}` for the ShiftControl frontend and API paths
 - `https://${SHIFTCONTROL_KEYCLOAK_DOMAIN}` for Keycloak

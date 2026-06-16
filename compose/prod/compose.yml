@@ -17,8 +17,6 @@ services:
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - shiftcontrol
     labels:
       - traefik.enable=false
 
@@ -41,11 +39,8 @@ services:
     volumes:
       - ./data/keycloak:/opt/keycloak/data
       - ./config/realm.json:/opt/keycloak/data/import/prod-realm.json:ro
-    networks:
-      - shiftcontrol
     labels:
       - traefik.enable=true
-      - traefik.docker.network=shiftcontrol
       - traefik.http.routers.keycloak.entrypoints=websecure
       - traefik.http.routers.keycloak.rule=Host(`${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}`)
       - traefik.http.routers.keycloak.tls=true
@@ -65,8 +60,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-shiftcontrol}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in compose/prod/.env}
       POSTGRES_DB: ${POSTGRES_DB:-shiftservice}
-    networks:
-      - shiftcontrol
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     healthcheck:
@@ -87,11 +80,8 @@ services:
 #      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:?Set PGADMIN_DEFAULT_PASSWORD in compose/prod/.env}
 #    volumes:
 #      - ./data/pgadmin:/var/lib/pgadmin
-#    networks:
-#      - shiftcontrol
 #    labels:
 #      - traefik.enable=true
-#      - traefik.docker.network=shiftcontrol
 #      - traefik.http.routers.pgadmin.entrypoints=websecure
 #      - traefik.http.routers.pgadmin.rule=Host(`pgadmin.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}`)
 #      - traefik.http.routers.pgadmin.tls=true
@@ -104,8 +94,6 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-shiftcontrol}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS in compose/prod/.env}
-    networks:
-      - shiftcontrol
     volumes:
       - ./data/rabbitmq:/var/lib/rabbitmq
     healthcheck:
@@ -118,8 +106,6 @@ services:
   redis:
     image: redis:7-alpine
     container_name: shiftcontrol-redis
-    networks:
-      - shiftcontrol
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -145,11 +131,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in compose/prod/.env}
     volumes:
       - ./config/shiftservice.application.yml:/app/application.yml
-    networks:
-      - shiftcontrol
     labels:
       - traefik.enable=true
-      - traefik.docker.network=shiftcontrol
       - traefik.http.routers.shiftservice.entrypoints=websecure
       - traefik.http.routers.shiftservice.rule=Host(`${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}`) && PathPrefix(`/shiftservice`)
       - traefik.http.routers.shiftservice.priority=100
@@ -184,11 +167,8 @@ services:
       Email__SmtpPassword: ${SMTP_PASSWORD:?Set SMTP_PASSWORD in compose/prod/.env}
     volumes:
       - ./config/notificationservice.appsettings.json:/app/appsettings.json
-    networks:
-      - shiftcontrol
     labels:
       - traefik.enable=true
-      - traefik.docker.network=shiftcontrol
       - traefik.http.routers.notificationservice.entrypoints=websecure
       - traefik.http.routers.notificationservice.rule=Host(`${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}`) && PathPrefix(`/notifications`)
       - traefik.http.routers.notificationservice.priority=100
@@ -221,11 +201,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in compose/prod/.env}
     volumes:
       - ./config/auditservice.application.yml:/app/application.yml
-    networks:
-      - shiftcontrol
     labels:
       - traefik.enable=true
-      - traefik.docker.network=shiftcontrol
       - traefik.http.routers.auditservice.entrypoints=websecure
       - traefik.http.routers.auditservice.rule=Host(`${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}`) && PathPrefix(`/auditservice`)
       - traefik.http.routers.auditservice.priority=100
@@ -256,8 +233,6 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
     volumes:
       - ./config/trustservice.application.yml:/app/application.yml
-    networks:
-      - shiftcontrol
 
   shiftcontrol-frontend:
     image: ghcr.io/pilotwhale-os/shiftcontrol/dashboard:latest
@@ -270,11 +245,8 @@ services:
       SHIFTSERVICE_BASE_PATH: https://${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}/shiftservice
       AUDITSERVICE_BASE_PATH: https://${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}/auditservice
       NOTIFICATIONSERVICE_BASE_PATH: https://${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}/notifications
-    networks:
-      - shiftcontrol
     labels:
       - traefik.enable=true
-      - traefik.docker.network=shiftcontrol
       - traefik.http.routers.frontend.rule=Host(`${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}`)
       - traefik.http.routers.frontend.entrypoints=websecure
       - traefik.http.routers.frontend.priority=1
@@ -293,9 +265,3 @@ services:
   #     TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
   #   depends_on:
   #     - traefik
-  #   networks:
-  #     - shiftcontrol
-
-networks:
-  shiftcontrol:
-    external: true
