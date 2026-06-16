@@ -27,7 +27,7 @@ services:
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in compose/prod/.env}
-      KC_HOSTNAME: ${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}
+      KC_HOSTNAME: https://${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}
       KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
       KC_PROXY_HEADERS: xforwarded
@@ -42,14 +42,10 @@ services:
       - traefik.enable=true
       - traefik.http.routers.keycloak.entrypoints=websecure
       - traefik.http.routers.keycloak.rule=Host(`${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}`)
-      - traefik.http.routers.keycloak.middlewares=keycloak-forwarded-headers
       - traefik.http.routers.keycloak.tls=true
-      - traefik.http.middlewares.keycloak-forwarded-headers.headers.customrequestheaders.X-Forwarded-Proto=https
-      - traefik.http.middlewares.keycloak-forwarded-headers.headers.customrequestheaders.X-Forwarded-Port=443
-      - traefik.http.middlewares.keycloak-forwarded-headers.headers.customrequestheaders.X-Forwarded-Host=${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}
       - traefik.http.services.keycloak.loadbalancer.server.port=8080
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080;echo -e \"GET /health/ready HTTP/1.1\r\nhost: http://localhost\r\nConnection: close\r\n\r\n\" >&3;grep \"HTTP/1.1 200 OK\" <&3"]
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000;echo -e \"GET /health/ready HTTP/1.1\r\nhost: localhost\r\nConnection: close\r\n\r\n\" >&3;grep \"HTTP/1.1 200 OK\" <&3"]
       interval: 10s
       timeout: 5s
       retries: 12
