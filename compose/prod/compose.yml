@@ -37,7 +37,7 @@ services:
       - --log-level=INFO
     volumes:
       - ./data/keycloak:/opt/keycloak/data
-      - ./config/realm.json:/opt/keycloak/data/import/prod-realm.json:ro
+      - ./config/realm.rendered.json:/opt/keycloak/data/import/prod-realm.json:ro
     labels:
       - traefik.enable=true
       - traefik.http.routers.keycloak.entrypoints=websecure

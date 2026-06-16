@@ -482,7 +482,7 @@
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "secret": "3mnwKdFacOw8DiTfcCHHSVVMiHjzIoms",
+      "secret": "__KEYCLOAK_INTERNAL_CLIENT_SECRET__",
       "redirectUris": [
         "/*"
       ],

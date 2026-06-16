@@ -36,6 +36,12 @@ KEYCLOAK_INTERNAL_CLIENT_SECRET=change-me
 SMTP_PASSWORD=change-me
 ```
 
+`KEYCLOAK_ADMIN_USER` and `KEYCLOAK_ADMIN_PASSWORD` are shared credentials:
+- Keycloak uses them to create the initial admin account.
+- `shiftservice` and `auditservice` use the same values to log in through the `master` realm with the `admin-cli` client.
+
+Keep those values aligned. If you change the admin username or password in `.env`, the bootstrap admin login and both Spring services must all use that same pair.
+
 If you want to enable the optional pgAdmin service, also set:
 ```bash
 PGADMIN_DEFAULT_EMAIL=admin@admin.com
@@ -45,18 +51,26 @@ PGADMIN_DEFAULT_PASSWORD=change-me
 The Spring Boot services read these variables directly from their YAML config, while the ASP.NET NotificationService receives its domain-specific and secret settings through Docker environment overrides.
 Required secrets use Docker Compose's `${VAR:?message}` form, so `docker compose` will fail fast with a clear error if a required secret is missing.
 
-Only `config/realm.json` still needs hostname replacement before starting the stack. Do not run a repo-wide `sed`, because several configs intentionally contain environment placeholders now.
+Before starting the stack, render `config/realm.rendered.json` from the checked-in `config/realm.json` template. This keeps the real internal Keycloak client secret out of the tracked file.
 
-Replace the placeholder hostnames in that one file only:
+Create the rendered realm file with your real domain and the `KEYCLOAK_INTERNAL_CLIENT_SECRET` from `.env`:
 ```bash
-sed -i 's/shiftcontrol.example.com/your-domain.example.com/g' config/realm.json
+escaped_secret="$(printf '%s' "$KEYCLOAK_INTERNAL_CLIENT_SECRET" | sed 's/[\\/&]/\\&/g')"
+sed \
+  -e 's/shiftcontrol.example.com/your-domain.example.com/g' \
+  -e "s/__KEYCLOAK_INTERNAL_CLIENT_SECRET__/$escaped_secret/g" \
+  config/realm.json > config/realm.rendered.json
 ```
 
-That replacement updates both:
+That render step updates both:
 - `https://shiftcontrol.example.com`
 - `https://keycloak.shiftcontrol.example.com`
 
-The mounted `config/realm.json` is imported automatically by Keycloak on startup because the container runs with `start --import-realm`.
+It also replaces the `internal` client secret in the realm import so it matches `KEYCLOAK_INTERNAL_CLIENT_SECRET`, which `notificationservice` reads from Docker environment overrides.
+
+Do not commit `config/realm.rendered.json`. It is only a local deployment artifact.
+
+The mounted `config/realm.rendered.json` is imported automatically by Keycloak on startup because the container runs with `start --import-realm`.
 After the stack is up, log in to Keycloak using the admin credentials from `.env`.
 To assign application admin privileges to a user, add the user attribute `userType` with the value `ADMIN`.  
 Volunteers may have no value or `ASSIGNED`.
