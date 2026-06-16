@@ -774,10 +774,10 @@
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "https://frontend.shiftcontrol.example.com/*"
+        "https://shiftcontrol.example.com/*"
       ],
       "webOrigins": [
-        "https://frontend.shiftcontrol.example.com"
+        "https://shiftcontrol.example.com"
       ],
       "notBefore": 0,
       "bearerOnly": false,
@@ -791,7 +791,7 @@
       "protocol": "openid-connect",
       "attributes": {
         "oidc.ciba.grant.enabled": "false",
-        "post.logout.redirect.uris": "https://frontend.shiftcontrol.example.com/*",
+        "post.logout.redirect.uris": "https://shiftcontrol.example.com/*",
         "oauth2.device.authorization.grant.enabled": "false",
         "backchannel.logout.session.required": "true",
         "backchannel.logout.revoke.offline.tokens": "false"

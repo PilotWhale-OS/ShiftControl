@@ -20,11 +20,7 @@ services:
     networks:
       - shiftcontrol
     labels:
-      - traefik.enable=true
-      - traefik.http.routers.traefik.entrypoints=websecure
-      - traefik.http.routers.traefik.rule=Host(`traefik.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}`)
-      - traefik.http.routers.traefik.service=api@internal
-      - traefik.http.routers.traefik.tls=true
+      - traefik.enable=false
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.0.0
@@ -80,26 +76,26 @@ services:
       retries: 6
       start_period: 10s
 
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: shiftcontrol-pgadmin
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@admin.com}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:?Set PGADMIN_DEFAULT_PASSWORD in compose/prod/.env}
-    volumes:
-      - pgadmin-data:/var/lib/pgadmin
-    networks:
-      - shiftcontrol
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=shiftcontrol
-      - traefik.http.routers.pgadmin.entrypoints=websecure
-      - traefik.http.routers.pgadmin.rule=Host(`pgadmin.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}`)
-      - traefik.http.routers.pgadmin.tls=true
-      - traefik.http.services.pgadmin.loadbalancer.server.port=80
+#  pgadmin:
+#    image: dpage/pgadmin4:latest
+#    container_name: shiftcontrol-pgadmin
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#    environment:
+#      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@admin.com}
+#      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:?Set PGADMIN_DEFAULT_PASSWORD in compose/prod/.env}
+#    volumes:
+#      - pgadmin-data:/var/lib/pgadmin
+#    networks:
+#      - shiftcontrol
+#    labels:
+#      - traefik.enable=true
+#      - traefik.docker.network=shiftcontrol
+#      - traefik.http.routers.pgadmin.entrypoints=websecure
+#      - traefik.http.routers.pgadmin.rule=Host(`pgadmin.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}`)
+#      - traefik.http.routers.pgadmin.tls=true
+#      - traefik.http.services.pgadmin.loadbalancer.server.port=80
 
   rabbitmq:
     image: rabbitmq:4-management
@@ -155,7 +151,8 @@ services:
       - traefik.enable=true
       - traefik.docker.network=shiftcontrol
       - traefik.http.routers.shiftservice.entrypoints=websecure
-      - traefik.http.routers.shiftservice.rule=Host(`shiftservice.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}`)
+      - traefik.http.routers.shiftservice.rule=Host(`${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}`) && PathPrefix(`/shiftservice`)
+      - traefik.http.routers.shiftservice.priority=100
       - traefik.http.routers.shiftservice.tls=true
       - traefik.http.services.shiftservice.loadbalancer.server.port=8080
 
@@ -177,9 +174,9 @@ services:
       EMPTY: empty
       Jwt__Authority: http://keycloak:8080/realms/prod
       Jwt__Issuers__0: http://keycloak:8080/realms/prod
-      SignalR__AllowedOrigins__0: https://frontend.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
+      SignalR__AllowedOrigins__0: https://${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
       Jwt__Issuers__1: https://${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}/realms/prod
-      Frontend__BaseUrl: https://frontend.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
+      Frontend__BaseUrl: https://${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
       RabbitMQ__UserName: ${RABBITMQ_DEFAULT_USER:-shiftcontrol}
       RabbitMQ__Password: ${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS in compose/prod/.env}
       Db__ConnectionString: Server=postgres;Port=5432;Database=${NOTIFICATIONSERVICE_POSTGRES_DB:-notificationservice};User Id=${POSTGRES_USER:-shiftcontrol};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in compose/prod/.env};
@@ -193,8 +190,11 @@ services:
       - traefik.enable=true
       - traefik.docker.network=shiftcontrol
       - traefik.http.routers.notificationservice.entrypoints=websecure
-      - traefik.http.routers.notificationservice.rule=Host(`notificationservice.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}`)
+      - traefik.http.routers.notificationservice.rule=Host(`${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}`) && PathPrefix(`/notifications`)
+      - traefik.http.routers.notificationservice.priority=100
       - traefik.http.routers.notificationservice.tls=true
+      - traefik.http.routers.notificationservice.middlewares=notificationservice-strip-prefix
+      - traefik.http.middlewares.notificationservice-strip-prefix.stripprefix.prefixes=/notifications
       - traefik.http.services.notificationservice.loadbalancer.server.port=8080
 
   auditservice:
@@ -227,7 +227,8 @@ services:
       - traefik.enable=true
       - traefik.docker.network=shiftcontrol
       - traefik.http.routers.auditservice.entrypoints=websecure
-      - traefik.http.routers.auditservice.rule=Host(`auditservice.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}`)
+      - traefik.http.routers.auditservice.rule=Host(`${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}`) && PathPrefix(`/auditservice`)
+      - traefik.http.routers.auditservice.priority=100
       - traefik.http.routers.auditservice.tls=true
       - traefik.http.services.auditservice.loadbalancer.server.port=8089
 
@@ -274,8 +275,9 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=shiftcontrol
-      - traefik.http.routers.frontend.rule=Host(`frontend.${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}`)
+      - traefik.http.routers.frontend.rule=Host(`${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}`)
       - traefik.http.routers.frontend.entrypoints=websecure
+      - traefik.http.routers.frontend.priority=1
       - traefik.http.routers.frontend.tls=true
       - traefik.http.services.frontend.loadbalancer.server.port=8080
       # - traefik.http.routers.frontend.middlewares=jwt-auth@file
