@@ -28,11 +28,13 @@
     "ConnectionString": "Server=postgres;Port=5432;Database=notificationservice;User Id=shiftcontrol;Password=change-me;",
     "EnsureCreated": true
   },
-  "Keycloak": {
-    "BaseUrl": "http://keycloak:8080/",
-    "ClientId": "internal",
-    "ClientSecret": "change-me",
-    "Realm": "prod"
+  "OAuth2": {
+    "Client": {
+      "TokenUrl": "http://keycloak:8080/realms/prod/protocol/openid-connect/token",
+      "ClientId": "internal",
+      "ClientSecret": "change-me",
+      "Scope": ""
+    }
   },
   "Shiftservice": {
     "BaseUrl": "http://shiftservice:8080/"

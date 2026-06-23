@@ -5,22 +5,17 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://keycloak:8080/realms/prod
+          issuer-uri: ${oidc.provider.issuer-uri}
 logging:
   level:
     root: INFO
 
-keycloak:
-  auth-server-url: http://keycloak:8080/
-  auth-realm: prod
-  allowed-issuers:
+oidc:
+  provider:
+    issuer-uri: http://keycloak:8080/realms/prod
+    allowed-issuers:
     - https://${SHIFTCONTROL_KEYCLOAK_DOMAIN:keycloak.shiftcontrol.example.com}/realms/prod
     - http://keycloak:8080/realms/prod
-  client:
-    id: admin-cli
-    realm: master
-    username: ${KEYCLOAK_ADMIN_USER:admin}
-    password: ${KEYCLOAK_ADMIN_PASSWORD}
 
 shiftcontrol:
   domain: ${SHIFTCONTROL_DOMAIN:shiftcontrol.example.com}

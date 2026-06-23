@@ -123,8 +123,6 @@ services:
     environment:
       SHIFTCONTROL_DOMAIN: ${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
       SHIFTCONTROL_KEYCLOAK_DOMAIN: ${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}
-      KEYCLOAK_ADMIN_USER: ${KEYCLOAK_ADMIN_USER:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in compose/prod/.env}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-shiftservice}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-shiftcontrol}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in compose/prod/.env}
@@ -162,7 +160,7 @@ services:
       RabbitMQ__UserName: ${RABBITMQ_DEFAULT_USER:-shiftcontrol}
       RabbitMQ__Password: ${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS in compose/prod/.env}
       Db__ConnectionString: Server=postgres;Port=5432;Database=${NOTIFICATIONSERVICE_POSTGRES_DB:-notificationservice};User Id=${POSTGRES_USER:-shiftcontrol};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in compose/prod/.env};
-      Keycloak__ClientSecret: ${KEYCLOAK_INTERNAL_CLIENT_SECRET:?Set KEYCLOAK_INTERNAL_CLIENT_SECRET in compose/prod/.env}
+      OAuth2__Client__ClientSecret: ${KEYCLOAK_INTERNAL_CLIENT_SECRET:?Set KEYCLOAK_INTERNAL_CLIENT_SECRET in compose/prod/.env}
       Email__SmtpPassword: ${SMTP_PASSWORD:?Set SMTP_PASSWORD in compose/prod/.env}
     volumes:
       - ./config/notificationservice.appsettings.json:/app/appsettings.json
@@ -191,8 +189,6 @@ services:
     environment:
       SHIFTCONTROL_DOMAIN: ${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
       SHIFTCONTROL_KEYCLOAK_DOMAIN: ${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}
-      KEYCLOAK_ADMIN_USER: ${KEYCLOAK_ADMIN_USER:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in compose/prod/.env}
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-shiftcontrol}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS in compose/prod/.env}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-shiftservice}
@@ -220,6 +216,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      keycloak:
+        condition: service_healthy
     environment:
       SHIFTCONTROL_DOMAIN: ${SHIFTCONTROL_DOMAIN:-shiftcontrol.example.com}
       SHIFTCONTROL_KEYCLOAK_DOMAIN: ${SHIFTCONTROL_KEYCLOAK_DOMAIN:-keycloak.shiftcontrol.example.com}
@@ -230,6 +228,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in compose/prod/.env}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
+      TRUST_OAUTH2_CLIENT_CLIENTSECRET: ${KEYCLOAK_INTERNAL_CLIENT_SECRET:?Set KEYCLOAK_INTERNAL_CLIENT_SECRET in compose/prod/.env}
     volumes:
       - ./config/trustservice.application.yml:/app/application.yml
 

@@ -13,6 +13,15 @@ spring:
       port: 6379
 
 trust:
+  shiftservice:
+    baseUrl: http://shiftservice:8080/
+    endpoint: api/v1/trust-alerts
+  oauth2:
+    client:
+      tokenUrl: http://keycloak:8080/realms/prod/protocol/openid-connect/token
+      clientId: internal
+      clientSecret: change-me
+      scope:
   rabbitmq:
     exchange: shiftcontrol
     queue: trust-service
