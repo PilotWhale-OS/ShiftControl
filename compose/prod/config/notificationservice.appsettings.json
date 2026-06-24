@@ -37,7 +37,8 @@
     }
   },
   "Shiftservice": {
-    "BaseUrl": "http://shiftservice:8080/"
+    "BaseUrl": "http://shiftservice:8080/",
+    "ApiKey": ""
   },
   "Frontend": {
     "BaseUrl": "https://shiftcontrol.example.com"

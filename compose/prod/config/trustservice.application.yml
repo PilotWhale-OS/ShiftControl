@@ -16,6 +16,7 @@ trust:
   shiftservice:
     baseUrl: http://shiftservice:8080/
     endpoint: api/v1/trust-alerts
+    apiKey:
   oauth2:
     client:
       tokenUrl: http://keycloak:8080/realms/prod/protocol/openid-connect/token

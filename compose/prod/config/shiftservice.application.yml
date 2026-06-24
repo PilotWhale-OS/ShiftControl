@@ -20,3 +20,5 @@ oidc:
 shiftcontrol:
   domain: ${SHIFTCONTROL_DOMAIN:shiftcontrol.example.com}
   keycloak-domain: ${SHIFTCONTROL_KEYCLOAK_DOMAIN:keycloak.shiftcontrol.example.com}
+  internal-api:
+    key: ${SHIFTCONTROL_INTERNAL_API_KEY:}

@@ -32,6 +32,7 @@ POSTGRES_DB=shiftservice
 NOTIFICATIONSERVICE_POSTGRES_DB=notificationservice
 RABBITMQ_DEFAULT_USER=shiftcontrol
 RABBITMQ_DEFAULT_PASS=change-me
+SHIFTCONTROL_INTERNAL_API_KEY=
 KEYCLOAK_INTERNAL_CLIENT_SECRET=change-me
 SMTP_PASSWORD=change-me
 ```
@@ -42,6 +43,14 @@ SMTP_PASSWORD=change-me
 `KEYCLOAK_INTERNAL_CLIENT_SECRET` is the shared OAuth2 client secret for trusted
 service-to-service calls. The current production stack uses it for internal access
 from `notificationservice` and `trustservice` to `shiftservice`.
+
+`SHIFTCONTROL_INTERNAL_API_KEY` is an optional simpler alternative for trusted
+service-to-service calls into `shiftservice`.
+- when set, `notificationservice` and `trustservice` prefer it over OAuth
+- it is sent as the header:
+  - `X-ShiftControl-Internal-Api-Key`
+- it is treated by `shiftservice` as a trusted internal machine credential with
+  admin-equivalent service permissions
 
 If you want to enable the optional pgAdmin service, also set:
 ```bash
@@ -62,6 +71,14 @@ This production setup uses Keycloak as both:
 
 The services no longer use the Keycloak admin API at runtime. Keycloak is only
 the identity provider and token issuer.
+
+For internal service-to-service calls, there are now two supported options:
+- simpler option:
+  - configure `SHIFTCONTROL_INTERNAL_API_KEY`
+  - `notificationservice` and `trustservice` will prefer the shared API key
+- standards-based option:
+  - configure the Keycloak client `internal`
+  - the services will use OAuth2 `client_credentials`
 
 For this system, there are two relevant OAuth clients:
 
@@ -92,12 +109,15 @@ For this system, there are two relevant OAuth clients:
   - `internal`
 - client secret source:
   - `KEYCLOAK_INTERNAL_CLIENT_SECRET`
+- when used as the fallback OAuth path, its access token should carry:
+  - `admin`
+  - `shiftservice.users.read`
 
 The backend services trust OIDC tokens from the `prod` realm as follows:
 - `shiftservice` validates JWTs using `oidc.provider.*` in `config/shiftservice.application.yml`
 - `auditservice` validates JWTs using `oidc.provider.*` in `config/auditservice.application.yml`
-- `notificationservice` validates user JWTs via its `Jwt` settings and obtains service tokens from the `internal` client
-- `trustservice` obtains service tokens from the `internal` client
+- `notificationservice` validates user JWTs via its `Jwt` settings and uses either the internal API key or service tokens from the `internal` client
+- `trustservice` uses either the internal API key or service tokens from the `internal` client
 
 ### Recommended Production Setup
 
@@ -105,7 +125,9 @@ For a real deployment, think of the required Keycloak setup like this:
 
 1. Create or use a Keycloak realm named `prod`.
 2. Create a browser client `frontend` for the Angular frontend.
-3. Create a confidential client `internal` for service-to-service tokens.
+3. Either:
+- configure `SHIFTCONTROL_INTERNAL_API_KEY` for the simpler internal-service auth path, or
+- create a confidential client `internal` for OAuth2 service-to-service tokens
 4. Configure admin users with the realm role `admin`.
 5. Point the deployed containers at that Keycloak realm and those clients.
 
@@ -156,9 +178,18 @@ Use these settings when configuring Keycloak for ShiftControl.
 - implicit flow: disabled
 - set the client secret to the same value as:
   - `KEYCLOAK_INTERNAL_CLIENT_SECRET`
-- make sure this client can present the authority:
+- make sure this client can present the authorities:
+  - `admin`
   - `shiftservice.users.read`
-  for trusted internal reads against Shiftservice
+  so it can perform the same trusted machine calls as the internal API key path
+
+Alternative simpler setup:
+- set `SHIFTCONTROL_INTERNAL_API_KEY` in `.env`
+- the production compose file injects it into:
+  - `shiftservice`
+  - `notificationservice`
+  - `trustservice`
+- those callers will then use `X-ShiftControl-Internal-Api-Key` instead of OAuth
 
 4. Configure admin role assignment
 - the current application recognizes platform admins from the realm role:
@@ -201,6 +232,7 @@ Verify the following in realm `prod`:
 - `Service accounts roles` should be enabled
 - the client secret should match `KEYCLOAK_INTERNAL_CLIENT_SECRET`
 - the resulting access token should contain:
+  - `admin`
   - `shiftservice.users.read`
 
 3. `Realm settings`
@@ -233,10 +265,10 @@ compatibility, but it should be treated as transitional only.
 For user-facing tokens:
 - `shiftservice` and `auditservice` trust the configured OIDC issuer and its
   allowed issuer list from their mounted YAML config.
-- `notificationservice` trusts the configured JWT authority/issuers and uses the
-  standard OAuth2 client credentials flow for internal API access.
-- `trustservice` uses the same OAuth2 client credentials flow for its internal
-  calls to `shiftservice`.
+- `notificationservice` trusts the configured JWT authority/issuers and uses
+  either the internal API key or OAuth2 client credentials for internal API access.
+- `trustservice` uses the same internal API key or OAuth2 client credentials for
+  its internal calls to `shiftservice`.
 
 ### Optional Bootstrap via Realm Import
 
@@ -272,8 +304,8 @@ their Docker environment overrides.
 The bootstrap realm template also:
 - removes the old dedicated admin claim mapping
 - expects human admins to be granted the normal realm role `admin`
-- preconfigures the `internal` client to emit the authority
-  `shiftservice.users.read` for service-to-service calls
+- preconfigures the `internal` client to emit the authorities
+  `admin` and `shiftservice.users.read` for OAuth-based service-to-service calls
 
 Do not commit `config/realm.rendered.json`. It is only a deployment artifact.
 
@@ -287,7 +319,10 @@ Once the stack is running, a healthy OAuth setup should behave like this:
 - login redirects the browser to Keycloak on `https://${SHIFTCONTROL_KEYCLOAK_DOMAIN}`
 - after login, the browser returns to `https://${SHIFTCONTROL_DOMAIN}`
 - the frontend can call `/shiftservice` and `/auditservice` with the user's bearer token
-- `notificationservice` and `trustservice` can fetch tokens for client `internal` and call `shiftservice` internal APIs
+- if `SHIFTCONTROL_INTERNAL_API_KEY` is set, `notificationservice` and `trustservice`
+  can call `shiftservice` internal APIs with `X-ShiftControl-Internal-Api-Key`
+- otherwise, they can fetch tokens for client `internal` and call `shiftservice`
+  internal APIs with OAuth bearer tokens
 
 ## Starting the Application
 Start the full production stack with a single command:
