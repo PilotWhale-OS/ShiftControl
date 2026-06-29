@@ -1,0 +1,23 @@
+spring:
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: ${RABBITMQ_DEFAULT_USER}
+    password: ${RABBITMQ_DEFAULT_PASS}
+  jpa:
+    hibernate:
+      ddl-auto: none
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${oidc.provider.issuer-uri}
+
+oidc:
+  provider:
+    issuer-uri: ${SHIFTCONTROL_OIDC_ISSUER_URI}
+    allowed-issuers:
+    - ${SHIFTCONTROL_OIDC_ISSUER_URI}
+
+shiftcontrol:
+  domain: ${SHIFTCONTROL_DOMAIN}

@@ -1,0 +1,139 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "postgres") }}
+  labels:
+    {{- include "shiftcontrol.componentLabels" (dict "root" . "component" "postgres") | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "postgres") | nindent 4 }}
+  ports:
+    - name: postgres
+      port: {{ .Values.postgres.service.port }}
+      targetPort: postgres
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "rabbitmq") }}
+  labels:
+    {{- include "shiftcontrol.componentLabels" (dict "root" . "component" "rabbitmq") | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "rabbitmq") | nindent 4 }}
+  ports:
+    - name: amqp
+      port: {{ .Values.rabbitmq.service.amqpPort }}
+      targetPort: amqp
+    - name: management
+      port: {{ .Values.rabbitmq.service.managementPort }}
+      targetPort: management
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "redis") }}
+  labels:
+    {{- include "shiftcontrol.componentLabels" (dict "root" . "component" "redis") | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "redis") | nindent 4 }}
+  ports:
+    - name: redis
+      port: {{ .Values.redis.service.port }}
+      targetPort: redis
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "shiftservice") }}
+  labels:
+    {{- include "shiftcontrol.componentLabels" (dict "root" . "component" "shiftservice") | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "shiftservice") | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.shiftservice.service.port }}
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "notificationservice") }}
+  labels:
+    {{- include "shiftcontrol.componentLabels" (dict "root" . "component" "notificationservice") | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "notificationservice") | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.notificationservice.service.port }}
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "auditservice") }}
+  labels:
+    {{- include "shiftcontrol.componentLabels" (dict "root" . "component" "auditservice") | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "auditservice") | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.auditservice.service.port }}
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "trustservice") }}
+  labels:
+    {{- include "shiftcontrol.componentLabels" (dict "root" . "component" "trustservice") | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "trustservice") | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.trustservice.service.port }}
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "frontend") }}
+  labels:
+    {{- include "shiftcontrol.componentLabels" (dict "root" . "component" "frontend") | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "frontend") | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.frontend.service.port }}
+      targetPort: http
+---
+{{- if .Values.pgadmin.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "pgadmin") }}
+  labels:
+    {{- include "shiftcontrol.componentLabels" (dict "root" . "component" "pgadmin") | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "pgadmin") | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.pgadmin.service.port }}
+      targetPort: http
+{{- end }}

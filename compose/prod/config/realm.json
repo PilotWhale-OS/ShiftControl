@@ -83,6 +83,24 @@
         "clientRole": false,
         "containerId": "08529d9f-e942-4804-a2d9-94d4273dcdaa",
         "attributes": {}
+      },
+      {
+        "id": "4df27428-4054-4aa7-8877-f6a3845a55c9",
+        "name": "admin",
+        "description": "ShiftControl platform administrator role",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "08529d9f-e942-4804-a2d9-94d4273dcdaa",
+        "attributes": {}
+      },
+      {
+        "id": "49177ab1-2fdd-4993-a94a-5d066be3ad63",
+        "name": "shiftservice.users.read",
+        "description": "Allows trusted internal callers to read the Shiftservice internal user directory",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "08529d9f-e942-4804-a2d9-94d4273dcdaa",
+        "attributes": {}
       }
     ],
     "client": {
@@ -482,7 +500,7 @@
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "secret": "3mnwKdFacOw8DiTfcCHHSVVMiHjzIoms",
+      "secret": "__KEYCLOAK_INTERNAL_CLIENT_SECRET__",
       "redirectUris": [
         "/*"
       ],
@@ -537,16 +555,32 @@
           }
         },
         {
-          "name": "Internal Admin perms",
+          "name": "Internal user directory read",
           "protocol": "openid-connect",
           "protocolMapper": "oidc-hardcoded-claim-mapper",
           "consentRequired": false,
           "config": {
-            "claim.value": "ADMIN",
-            "userinfo.token.claim": "true",
-            "id.token.claim": "true",
+            "claim.value": "shiftservice.users.read",
+            "userinfo.token.claim": "false",
+            "id.token.claim": "false",
             "access.token.claim": "true",
-            "claim.name": "userType",
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "access.tokenResponse.claim": "false"
+          }
+        },
+        {
+          "name": "Internal admin role",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.value": "admin",
+            "userinfo.token.claim": "false",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String",
             "access.tokenResponse.claim": "false"
           }
         },
@@ -774,10 +808,10 @@
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "https://frontend.shiftcontrol.example.com/*"
+        "https://shiftcontrol.example.com/*"
       ],
       "webOrigins": [
-        "https://frontend.shiftcontrol.example.com"
+        "https://shiftcontrol.example.com"
       ],
       "notBefore": 0,
       "bearerOnly": false,
@@ -791,7 +825,7 @@
       "protocol": "openid-connect",
       "attributes": {
         "oidc.ciba.grant.enabled": "false",
-        "post.logout.redirect.uris": "https://frontend.shiftcontrol.example.com/*",
+        "post.logout.redirect.uris": "https://shiftcontrol.example.com/*",
         "oauth2.device.authorization.grant.enabled": "false",
         "backchannel.logout.session.required": "true",
         "backchannel.logout.revoke.offline.tokens": "false"
@@ -799,23 +833,7 @@
       "authenticationFlowBindingOverrides": {},
       "fullScopeAllowed": true,
       "nodeReRegistrationTimeout": -1,
-      "protocolMappers": [
-        {
-          "name": "userType",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-attribute-mapper",
-          "consentRequired": false,
-          "config": {
-            "aggregate.attrs": "false",
-            "userinfo.token.claim": "true",
-            "multivalued": "false",
-            "user.attribute": "userType",
-            "id.token.claim": "false",
-            "access.token.claim": "true",
-            "claim.name": "userType"
-          }
-        }
-      ],
+      "protocolMappers": [],
       "defaultClientScopes": [
         "web-origins",
         "acr",

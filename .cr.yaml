@@ -1,0 +1,5 @@
+owner: PilotWhale-OS
+git-repo: ShiftControl
+pages-branch: gh-pages
+package-path: .cr-release-packages
+release-name-template: "{{ .Name }}-{{ .Version }}"

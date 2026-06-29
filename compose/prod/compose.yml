@@ -1,0 +1,225 @@
+services:
+  traefik:
+    image: traefik:latest
+    container_name: shiftcontrol-prod-traefik
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels:
+      - traefik.enable=false
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: shiftcontrol-cloudflared
+    restart: unless-stopped
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+      - --token
+      - ${CLOUDFLARE_TUNNEL_TOKEN:?Set CLOUDFLARE_TUNNEL_TOKEN in compose/prod/.env}
+    depends_on:
+      traefik:
+        condition: service_started
+
+  postgres:
+    image: postgres:latest
+    container_name: shiftcontrol-postgres
+    hostname: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in compose/prod/.env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in compose/prod/.env}
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in compose/prod/.env}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:?Set POSTGRES_USER in compose/prod/.env} -d ${POSTGRES_DB:?Set POSTGRES_DB in compose/prod/.env}"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+
+#  pgadmin:
+#    image: dpage/pgadmin4:latest
+#    container_name: shiftcontrol-pgadmin
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#    environment:
+#      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:?Set PGADMIN_DEFAULT_EMAIL in compose/prod/.env}
+#      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:?Set PGADMIN_DEFAULT_PASSWORD in compose/prod/.env}
+#    volumes:
+#      - ./data/pgadmin:/var/lib/pgadmin
+#    labels:
+#      - traefik.enable=true
+#      - traefik.http.routers.pgadmin.entrypoints=websecure
+#      - traefik.http.routers.pgadmin.rule=Host(`pgadmin.${SHIFTCONTROL_DOMAIN:?Set SHIFTCONTROL_DOMAIN in compose/prod/.env}`)
+#      - traefik.http.routers.pgadmin.tls=true
+#      - traefik.http.services.pgadmin.loadbalancer.server.port=80
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: rabbitmq
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:?Set RABBITMQ_DEFAULT_USER in compose/prod/.env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS in compose/prod/.env}
+    volumes:
+      - ./data/rabbitmq:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    container_name: shiftcontrol-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  shiftservice:
+    image: ghcr.io/pilotwhale-os/shiftcontrol/shiftservice:latest
+    container_name: shiftcontrol-shiftservice
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SHIFTCONTROL_DOMAIN: ${SHIFTCONTROL_DOMAIN:?Set SHIFTCONTROL_DOMAIN in compose/prod/.env}
+      SHIFTCONTROL_OIDC_ISSUER_URI: ${SHIFTCONTROL_OIDC_ISSUER_URI:?Set SHIFTCONTROL_OIDC_ISSUER_URI in compose/prod/.env}
+      SHIFTCONTROL_INTERNAL_API_KEY: ${SHIFTCONTROL_INTERNAL_API_KEY:-}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?Set POSTGRES_DB in compose/prod/.env}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?Set POSTGRES_USER in compose/prod/.env}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in compose/prod/.env}
+      SPRING_LIQUIBASE_CONTEXTS: ${SPRING_LIQUIBASE_CONTEXTS:-prod}
+    volumes:
+      - ./config/shiftservice.application.yml:/app/application.yml
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.shiftservice.entrypoints=web
+      - traefik.http.routers.shiftservice.rule=Host(`${SHIFTCONTROL_DOMAIN:?Set SHIFTCONTROL_DOMAIN in compose/prod/.env}`) && PathPrefix(`/shiftservice`)
+      - traefik.http.routers.shiftservice.priority=100
+      - traefik.http.services.shiftservice.loadbalancer.server.port=8080
+
+  notificationservice:
+    image: ghcr.io/pilotwhale-os/shiftcontrol/notificationservice:latest
+    container_name: shiftcontrol-notificationservice
+    depends_on:
+      shiftservice:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      SHIFTCONTROL_DOMAIN: ${SHIFTCONTROL_DOMAIN:?Set SHIFTCONTROL_DOMAIN in compose/prod/.env}
+      EMPTY: empty
+      Jwt__Authority: ${SHIFTCONTROL_OIDC_ISSUER_URI:?Set SHIFTCONTROL_OIDC_ISSUER_URI in compose/prod/.env}
+      Jwt__Issuers__0: ${SHIFTCONTROL_OIDC_ISSUER_URI:?Set SHIFTCONTROL_OIDC_ISSUER_URI in compose/prod/.env}
+      SignalR__AllowedOrigins__0: https://${SHIFTCONTROL_DOMAIN:?Set SHIFTCONTROL_DOMAIN in compose/prod/.env}
+      Frontend__BaseUrl: https://${SHIFTCONTROL_DOMAIN:?Set SHIFTCONTROL_DOMAIN in compose/prod/.env}
+      Email__EnableSending: ${SMTP_ENABLE_SENDING:-false}
+      Email__SmtpHost: ${SMTP_HOST:-smtp.gmail.com}
+      Email__SmtpPort: ${SMTP_PORT:-587}
+      Email__SmtpUsername: ${SMTP_USERNAME:-}
+      Email__FromName: ${SMTP_FROM_NAME:-ShiftControl Notifications}
+      Email__FromEmail: ${SMTP_FROM_EMAIL:-noreply@shiftcontrol.com}
+      Email__SecureSocketOptions: ${SMTP_SECURE_SOCKET_OPTIONS:-StartTls}
+      RabbitMQ__UserName: ${RABBITMQ_DEFAULT_USER:?Set RABBITMQ_DEFAULT_USER in compose/prod/.env}
+      RabbitMQ__Password: ${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS in compose/prod/.env}
+      Db__ConnectionString: Server=postgres;Port=5432;Database=${NOTIFICATIONSERVICE_POSTGRES_DB:?Set NOTIFICATIONSERVICE_POSTGRES_DB in compose/prod/.env};User Id=${POSTGRES_USER:?Set POSTGRES_USER in compose/prod/.env};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in compose/prod/.env};
+      Shiftservice__ApiKey: ${SHIFTCONTROL_INTERNAL_API_KEY:-}
+      OAuth2__Client__TokenUrl: ${SHIFTCONTROL_OIDC_TOKEN_URL:?Set SHIFTCONTROL_OIDC_TOKEN_URL in compose/prod/.env}
+      OAuth2__Client__ClientSecret: ${KEYCLOAK_INTERNAL_CLIENT_SECRET:-}
+      Email__SmtpPassword: ${SMTP_PASSWORD:-}
+    volumes:
+      - ./config/notificationservice.appsettings.json:/app/appsettings.json
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.notificationservice.entrypoints=web
+      - traefik.http.routers.notificationservice.rule=Host(`${SHIFTCONTROL_DOMAIN:?Set SHIFTCONTROL_DOMAIN in compose/prod/.env}`) && PathPrefix(`/notifications`)
+      - traefik.http.routers.notificationservice.priority=100
+      - traefik.http.routers.notificationservice.middlewares=notificationservice-strip-prefix
+      - traefik.http.middlewares.notificationservice-strip-prefix.stripprefix.prefixes=/notifications
+      - traefik.http.services.notificationservice.loadbalancer.server.port=8080
+
+  auditservice:
+    image: ghcr.io/pilotwhale-os/shiftcontrol/auditservice:latest
+    container_name: shiftcontrol-auditservice
+    depends_on:
+      shiftservice:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      SHIFTCONTROL_DOMAIN: ${SHIFTCONTROL_DOMAIN:?Set SHIFTCONTROL_DOMAIN in compose/prod/.env}
+      SHIFTCONTROL_OIDC_ISSUER_URI: ${SHIFTCONTROL_OIDC_ISSUER_URI:?Set SHIFTCONTROL_OIDC_ISSUER_URI in compose/prod/.env}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:?Set RABBITMQ_DEFAULT_USER in compose/prod/.env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS in compose/prod/.env}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?Set POSTGRES_DB in compose/prod/.env}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?Set POSTGRES_USER in compose/prod/.env}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in compose/prod/.env}
+    volumes:
+      - ./config/auditservice.application.yml:/app/application.yml
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.auditservice.entrypoints=web
+      - traefik.http.routers.auditservice.rule=Host(`${SHIFTCONTROL_DOMAIN:?Set SHIFTCONTROL_DOMAIN in compose/prod/.env}`) && PathPrefix(`/auditservice`)
+      - traefik.http.routers.auditservice.priority=100
+      - traefik.http.services.auditservice.loadbalancer.server.port=8089
+
+  trustservice:
+    image: ghcr.io/pilotwhale-os/shiftcontrol/trustservice:latest
+    container_name: shiftcontrol-trustservice
+    depends_on:
+      shiftservice:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SHIFTCONTROL_DOMAIN: ${SHIFTCONTROL_DOMAIN:?Set SHIFTCONTROL_DOMAIN in compose/prod/.env}
+      SHIFTCONTROL_OIDC_TOKEN_URL: ${SHIFTCONTROL_OIDC_TOKEN_URL:?Set SHIFTCONTROL_OIDC_TOKEN_URL in compose/prod/.env}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:?Set RABBITMQ_DEFAULT_USER in compose/prod/.env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS in compose/prod/.env}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?Set POSTGRES_DB in compose/prod/.env}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?Set POSTGRES_USER in compose/prod/.env}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in compose/prod/.env}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      TRUST_SHIFTSERVICE_API_KEY: ${SHIFTCONTROL_INTERNAL_API_KEY:-}
+      TRUST_OAUTH2_CLIENT_CLIENTSECRET: ${KEYCLOAK_INTERNAL_CLIENT_SECRET:-}
+    volumes:
+      - ./config/trustservice.application.yml:/app/application.yml
+
+  shiftcontrol-frontend:
+    image: ghcr.io/pilotwhale-os/shiftcontrol/dashboard:latest
+    container_name: shiftcontrol-dashboard
+    environment:
+      KEYCLOAK_URL: ${SHIFTCONTROL_OIDC_BASE_URL:?Set SHIFTCONTROL_OIDC_BASE_URL in compose/prod/.env}
+      KEYCLOAK_REALM: ${SHIFTCONTROL_OIDC_REALM:?Set SHIFTCONTROL_OIDC_REALM in compose/prod/.env}
+      KEYCLOAK_CLIENT_ID: ${SHIFTCONTROL_OIDC_CLIENT_ID:?Set SHIFTCONTROL_OIDC_CLIENT_ID in compose/prod/.env}
+      SHIFTSERVICE_BASE_PATH: https://${SHIFTCONTROL_DOMAIN:?Set SHIFTCONTROL_DOMAIN in compose/prod/.env}/shiftservice
+      AUDITSERVICE_BASE_PATH: https://${SHIFTCONTROL_DOMAIN:?Set SHIFTCONTROL_DOMAIN in compose/prod/.env}/auditservice
+      NOTIFICATIONSERVICE_BASE_PATH: https://${SHIFTCONTROL_DOMAIN:?Set SHIFTCONTROL_DOMAIN in compose/prod/.env}/notifications
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.frontend.rule=Host(`${SHIFTCONTROL_DOMAIN:?Set SHIFTCONTROL_DOMAIN in compose/prod/.env}`)
+      - traefik.http.routers.frontend.entrypoints=web
+      - traefik.http.routers.frontend.priority=1
+      - traefik.http.services.frontend.loadbalancer.server.port=8080
+      # - traefik.http.routers.frontend.middlewares=jwt-auth@file

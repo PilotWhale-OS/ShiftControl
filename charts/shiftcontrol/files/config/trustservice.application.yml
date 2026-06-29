@@ -2,7 +2,7 @@ spring:
   rabbitmq:
     host: rabbitmq
     port: 5672
-    username: ${RABBITMQ_DEFAULT_USER:shiftcontrol}
+    username: ${RABBITMQ_DEFAULT_USER}
     password: ${RABBITMQ_DEFAULT_PASS}
   jpa:
     hibernate:
@@ -14,14 +14,14 @@ spring:
 
 trust:
   shiftservice:
-    baseUrl: http://shiftservice:8080/
+    baseUrl: ${TRUST_SHIFTSERVICE_BASE_URL:http://shiftservice:8080/}
     endpoint: api/v1/trust-alerts
-    apiKey:
+    apiKey: ${TRUST_SHIFTSERVICE_API_KEY:}
   oauth2:
     client:
-      tokenUrl: http://keycloak:8080/realms/prod/protocol/openid-connect/token
+      tokenUrl: ${SHIFTCONTROL_OIDC_TOKEN_URL}
       clientId: internal
-      clientSecret: change-me
+      clientSecret: ${TRUST_OAUTH2_CLIENT_CLIENTSECRET:}
       scope:
   rabbitmq:
     exchange: shiftcontrol
@@ -29,5 +29,4 @@ trust:
     routing-key: shiftcontrol.#
 
 shiftcontrol:
-  domain: ${SHIFTCONTROL_DOMAIN:shiftcontrol.example.com}
-  keycloak-domain: ${SHIFTCONTROL_KEYCLOAK_DOMAIN:keycloak.shiftcontrol.example.com}
+  domain: ${SHIFTCONTROL_DOMAIN}

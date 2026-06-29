@@ -2,8 +2,8 @@ spring:
   rabbitmq:
     host: rabbitmq
     port: 5672
-    username: shiftcontrol
-    password: password
+    username: ${RABBITMQ_DEFAULT_USER:shiftcontrol}
+    password: ${RABBITMQ_DEFAULT_PASS}
   jpa:
     hibernate:
       ddl-auto: none
@@ -11,16 +11,15 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://keycloak:8080/realms/prod
+          issuer-uri: ${oidc.provider.issuer-uri}
 
-keycloak:
-  auth-server-url: http://keycloak:8080/
-  auth-realm: prod
-  allowed-issuers:
-    - https://keycloak.shiftcontrol.example.com/realms/prod
+oidc:
+  provider:
+    issuer-uri: http://keycloak:8080/realms/prod
+    allowed-issuers:
+    - https://${SHIFTCONTROL_KEYCLOAK_DOMAIN:keycloak.shiftcontrol.example.com}/realms/prod
     - http://keycloak:8080/realms/prod
-  client:
-    id: admin-cli
-    realm: master
-    username: admin
-    password: admin
+
+shiftcontrol:
+  domain: ${SHIFTCONTROL_DOMAIN:shiftcontrol.example.com}
+  keycloak-domain: ${SHIFTCONTROL_KEYCLOAK_DOMAIN:keycloak.shiftcontrol.example.com}

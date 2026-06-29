@@ -1,0 +1,6 @@
+apiVersion: v2
+name: shiftcontrol
+description: Production Helm chart for ShiftControl with external OIDC and Kubernetes-native ingress routing
+type: application
+version: 0.1.0
+appVersion: "latest"
