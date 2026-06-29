@@ -7,8 +7,6 @@ This chart deploys the production ShiftControl stack on Kubernetes with:
 - in-cluster PostgreSQL, RabbitMQ, and Redis
 - optional `pgAdmin`
 
-It intentionally does not deploy Keycloak.
-
 ## Layout
 
 - `global.ingress` exposes the frontend, `shiftservice`, and `auditservice`
