@@ -8,43 +8,45 @@
   "SignalR": {
     "HostPort": 8080,
     "AllowedOrigins": [
-      "http://frontend.127.0.0.1.nip.io"
+      ""
     ]
   },
   "Jwt": {
-    "Authority": "http://keycloak:8080/realms/dev",
+    "Authority": "",
     "Issuers": [
-      "http://keycloak:8080/realms/dev",
-      "http://keycloak.127.0.0.1.nip.io/realms/dev"
+      ""
     ]
   },
   "RabbitMQ": {
     "HostName": "rabbitmq",
     "Port": 5672,
-    "UserName": "shiftcontrol",
-    "Password": "password"
+    "UserName": "",
+    "Password": ""
   },
   "Db": {
-    "ConnectionString": "Server=postgres;Port=5432;Database=notificationservice;User Id=shiftcontrol;Password=password;",
+    "ConnectionString": "",
     "EnsureCreated": true
   },
-  "Keycloak": {
-    "BaseUrl": "http://keycloak:8080/",
-    "ClientId": "internal",
-    "ClientSecret": "3mnwKdFacOw8DiTfcCHHSVVMiHjzIoms",
-    "Realm": "dev"
+  "OAuth2": {
+    "Client": {
+      "TokenUrl": "",
+      "ClientId": "internal",
+      "ClientSecret": "",
+      "Scope": ""
+    }
   },
   "Shiftservice": {
-    "BaseUrl": "http://shiftservice:8080/"
+    "BaseUrl": "http://shiftservice:8080/",
+    "ApiKey": ""
   },
   "Frontend": {
-    "BaseUrl": "http://frontend.127.0.0.1.nip.io"
+    "BaseUrl": ""
   },
   "Email": {
     "EnableSending": false,
     "SmtpHost": "smtp.gmail.com",
     "SmtpPort": 587,
     "SmtpUsername": "email@example.com",
-    "SmtpPassword": "examplepassword"
+    "SmtpPassword": ""
   }
 }
