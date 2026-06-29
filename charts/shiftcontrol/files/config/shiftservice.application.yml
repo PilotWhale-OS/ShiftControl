@@ -1,0 +1,22 @@
+spring:
+  jackson:
+    default-property-inclusion: non_null
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${oidc.provider.issuer-uri}
+logging:
+  level:
+    root: INFO
+
+oidc:
+  provider:
+    issuer-uri: ${SHIFTCONTROL_OIDC_ISSUER_URI}
+    allowed-issuers:
+    - ${SHIFTCONTROL_OIDC_ISSUER_URI}
+
+shiftcontrol:
+  domain: ${SHIFTCONTROL_DOMAIN}
+  internal-api:
+    key: ${SHIFTCONTROL_INTERNAL_API_KEY:}

@@ -1,333 +1,180 @@
 Production Deployment of ShiftControl
-=== 
-This folder now contains a single production compose file: `compose.yml`.
+===
 
-## Prerequisites
-It is assumed that Docker and Docker Compose are installed.
+This folder is now wired for the production shape below:
 
-The bundled Traefik publishes ports 80 and 443 and exposes exactly two public hostnames:
-- `https://${SHIFTCONTROL_DOMAIN}` for the ShiftControl frontend and API paths
-- `https://${SHIFTCONTROL_KEYCLOAK_DOMAIN}` for Keycloak
+- public app URL: `https://shiftcontrol.chaircon.at`
+- external OIDC / Keycloak IdP: `https://sso.awoostria.at`
+- expected realm: `awoocrew`
+- frontend OIDC client id: `shiftcontrol`
+- ingress: Cloudflare Tunnel -> Traefik -> containers
+- no public `80` / `443` ports on the host
+- no bundled Keycloak container in this production compose
 
-The backend services are routed behind the main ShiftControl domain on path prefixes:
-- `/shiftservice`
-- `/auditservice`
-- `/notifications`
+The app frontend and the public backend routes live on the same hostname:
 
-Traefik itself is not published publicly in this production compose file.
-An optional pgAdmin service is included as commented configuration in `compose.yml`; if you enable it, it will be exposed on `https://pgadmin.${SHIFTCONTROL_DOMAIN}`.
-If you prefer Cloudflare Tunnel, a commented example is included in `compose.yml`.
- 
-## Configuration
+- `https://shiftcontrol.chaircon.at/`
+- `https://shiftcontrol.chaircon.at/shiftservice`
+- `https://shiftcontrol.chaircon.at/auditservice`
+- `https://shiftcontrol.chaircon.at/notifications`
 
-Set the base domain once, either in your shell or in a local `.env` file next to `compose.yml`:
+## What This Compose Expects
+
+Traefik only listens inside Docker on port `80`.
+`cloudflared` is the only ingress component exposed to the outside world, and it creates outbound-only connections to Cloudflare.
+
+For this deployment, you should create one Cloudflare Tunnel route:
+
+- hostname: `shiftcontrol.chaircon.at`
+- service URL: `http://traefik:80`
+
+That matches Cloudflare's published-application model for remotely managed tunnels and lets Cloudflare proxy the single public hostname into the internal Traefik router. Sources: [Cloudflare Tunnel setup](https://developers.cloudflare.com/tunnel/setup/), [Tunnel tokens](https://developers.cloudflare.com/tunnel/advanced/tunnel-tokens/).
+
+## Environment File
+
+`compose/prod/.env` is the single source of truth for deployment-specific values.
+
 ```bash
-SHIFTCONTROL_DOMAIN=shiftcontrol.example.com
-SHIFTCONTROL_KEYCLOAK_DOMAIN=keycloak.shiftcontrol.example.com
-KEYCLOAK_ADMIN_USER=admin
-KEYCLOAK_ADMIN_PASSWORD=change-me
+SHIFTCONTROL_DOMAIN=shiftcontrol.chaircon.at
+SHIFTCONTROL_OIDC_BASE_URL=https://sso.awoostria.at
+SHIFTCONTROL_OIDC_REALM=awoocrew
+SHIFTCONTROL_OIDC_CLIENT_ID=shiftcontrol
+SHIFTCONTROL_OIDC_ISSUER_URI=https://sso.awoostria.at/realms/awoocrew
+SHIFTCONTROL_OIDC_TOKEN_URL=https://sso.awoostria.at/realms/awoocrew/protocol/openid-connect/token
 POSTGRES_USER=shiftcontrol
 POSTGRES_PASSWORD=change-me
 POSTGRES_DB=shiftservice
 NOTIFICATIONSERVICE_POSTGRES_DB=notificationservice
 RABBITMQ_DEFAULT_USER=shiftcontrol
 RABBITMQ_DEFAULT_PASS=change-me
-SHIFTCONTROL_INTERNAL_API_KEY=
-KEYCLOAK_INTERNAL_CLIENT_SECRET=change-me
-SMTP_PASSWORD=change-me
+SHIFTCONTROL_INTERNAL_API_KEY=change-me-to-a-long-random-secret
+KEYCLOAK_INTERNAL_CLIENT_SECRET=
+SMTP_ENABLE_SENDING=false
+SMTP_HOST=smtp.site.com
+SMTP_PORT=587
+SMTP_USERNAME=notifications@site.com
+SMTP_PASSWORD=
+SMTP_FROM_NAME=ShiftControl Notifications
+SMTP_FROM_EMAIL=noreply@site.com
+SMTP_SECURE_SOCKET_OPTIONS=StartTls
+CLOUDFLARE_TUNNEL_TOKEN=change-me
 ```
 
-`KEYCLOAK_ADMIN_USER` and `KEYCLOAK_ADMIN_PASSWORD` are shared credentials:
-- Keycloak uses them to create the initial admin account.
+Notes:
 
-`KEYCLOAK_INTERNAL_CLIENT_SECRET` is the shared OAuth2 client secret for trusted
-service-to-service calls. The current production stack uses it for internal access
-from `notificationservice` and `trustservice` to `shiftservice`.
+- `SHIFTCONTROL_INTERNAL_API_KEY` is the recommended service-to-service credential.
+- `KEYCLOAK_INTERNAL_CLIENT_SECRET` is optional and only needed if you want the older OAuth `client_credentials` path for internal service calls.
+- `SMTP_ENABLE_SENDING=false` keeps email delivery off entirely.
+- `SMTP_PASSWORD` is optional as long as email sending stays disabled or your SMTP server does not require authentication.
+- `SMTP_SECURE_SOCKET_OPTIONS` should be one of MailKit's enum names such as `None`, `Auto`, `SslOnConnect`, `StartTls`, or `StartTlsWhenAvailable`.
+- sender identity is configured through `SMTP_FROM_NAME` and `SMTP_FROM_EMAIL`.
 
-`SHIFTCONTROL_INTERNAL_API_KEY` is an optional simpler alternative for trusted
-service-to-service calls into `shiftservice`.
-- when set, `notificationservice` and `trustservice` prefer it over OAuth
-- it is sent as the header:
-  - `X-ShiftControl-Internal-Api-Key`
-- it is treated by `shiftservice` as a trusted internal machine credential with
-  admin-equivalent service permissions
+## Recommended Internal Auth Setup
 
-If you want to enable the optional pgAdmin service, also set:
-```bash
-PGADMIN_DEFAULT_EMAIL=admin@admin.com
-PGADMIN_DEFAULT_PASSWORD=change-me
-```
+The easiest production setup is:
 
-The Spring Boot services read these variables directly from their YAML config.
-The ASP.NET NotificationService receives its domain-specific and secret settings
-through Docker environment overrides.
-Required secrets use Docker Compose's `${VAR:?message}` form, so `docker compose` will fail fast with a clear error if a required secret is missing.
+1. Set a long random value for `SHIFTCONTROL_INTERNAL_API_KEY`.
+2. Leave `KEYCLOAK_INTERNAL_CLIENT_SECRET` empty.
+3. Start the stack.
 
-## OAuth / OIDC Setup with Keycloak
+With that setup:
 
-This production setup uses Keycloak as both:
-- the interactive OIDC provider for browser users
-- the OAuth2 token issuer for trusted service-to-service calls
+- `shiftservice` trusts `X-ShiftControl-Internal-Api-Key`
+- `notificationservice` uses the API key when calling `shiftservice`
+- `trustservice` uses the API key when calling `shiftservice`
 
-The services no longer use the Keycloak admin API at runtime. Keycloak is only
-the identity provider and token issuer.
+The API key is treated as a trusted internal machine credential with admin-level permissions inside `shiftservice`, exactly as requested.
 
-For internal service-to-service calls, there are now two supported options:
-- simpler option:
-  - configure `SHIFTCONTROL_INTERNAL_API_KEY`
-  - `notificationservice` and `trustservice` will prefer the shared API key
-- standards-based option:
-  - configure the Keycloak client `internal`
-  - the services will use OAuth2 `client_credentials`
+If you later prefer standards-only machine auth, you can configure a confidential Keycloak client `internal` and fill `KEYCLOAK_INTERNAL_CLIENT_SECRET`. The services already support that as a fallback.
 
-For this system, there are two relevant OAuth clients:
+## Keycloak Setup at `sso.awoostria.at`
 
-1. `frontend`
-- used by the SPA in the user's browser
-- configured in `compose.yml` via:
-  - `KEYCLOAK_URL=https://${SHIFTCONTROL_KEYCLOAK_DOMAIN}`
-  - `KEYCLOAK_REALM=prod`
-  - `KEYCLOAK_CLIENT_ID=frontend`
-- intended flow: Authorization Code with PKCE
-- expected redirect URIs:
-  - `https://${SHIFTCONTROL_DOMAIN}/*`
-- expected post-logout redirect URIs:
-  - `https://${SHIFTCONTROL_DOMAIN}/*`
-- expected web origins:
-  - `https://${SHIFTCONTROL_DOMAIN}`
-- the frontend also uses:
-  - `https://${SHIFTCONTROL_DOMAIN}/silent-check-sso.html`
-  for silent SSO checks
+This compose assumes your external Keycloak issuer is:
 
-2. `internal`
-- used only for trusted backend-to-backend calls
-- current consumers:
-  - `notificationservice`
-  - `trustservice`
-- intended flow: OAuth2 `client_credentials`
-- client id:
-  - `internal`
-- client secret source:
-  - `KEYCLOAK_INTERNAL_CLIENT_SECRET`
-- when used as the fallback OAuth path, its access token should carry:
-  - `admin`
-  - `shiftservice.users.read`
+- issuer: `https://sso.awoostria.at/realms/awoocrew`
+- token endpoint: `https://sso.awoostria.at/realms/awoocrew/protocol/openid-connect/token`
 
-The backend services trust OIDC tokens from the `prod` realm as follows:
-- `shiftservice` validates JWTs using `oidc.provider.*` in `config/shiftservice.application.yml`
-- `auditservice` validates JWTs using `oidc.provider.*` in `config/auditservice.application.yml`
-- `notificationservice` validates user JWTs via its `Jwt` settings and uses either the internal API key or service tokens from the `internal` client
-- `trustservice` uses either the internal API key or service tokens from the `internal` client
+If your realm or browser client id ever changes, update these variables in `.env` together:
 
-### Recommended Production Setup
+- `SHIFTCONTROL_OIDC_REALM`
+- `SHIFTCONTROL_OIDC_CLIENT_ID`
+- `SHIFTCONTROL_OIDC_BASE_URL`
+- `SHIFTCONTROL_OIDC_ISSUER_URI`
+- `SHIFTCONTROL_OIDC_TOKEN_URL`
 
-For a real deployment, think of the required Keycloak setup like this:
+### Frontend Client
 
-1. Create or use a Keycloak realm named `prod`.
-2. Create a browser client `frontend` for the Angular frontend.
-3. Either:
-- configure `SHIFTCONTROL_INTERNAL_API_KEY` for the simpler internal-service auth path, or
-- create a confidential client `internal` for OAuth2 service-to-service tokens
-4. Configure admin users with the realm role `admin`.
-5. Point the deployed containers at that Keycloak realm and those clients.
+Create or verify a browser client with:
 
-That is the actual production requirement.
-
-The checked-in realm import in this repository is best treated as a bootstrap
-helper and reference configuration:
-- useful for local/dev environments
-- useful for first-time setup or comparison
-- useful to see the exact client and mapper shape the application expects
-
-It should not be read as "production must be operated by re-importing this JSON
-on every rollout". In production, the clearer model is to configure Keycloak
-deliberately and manage secrets outside tracked files.
-
-### Clear Keycloak Setup Guide
-
-Use these settings when configuring Keycloak for ShiftControl.
-
-1. Create realm `prod`
-- realm name: `prod`
-- public issuer should end up as:
-  - `https://${SHIFTCONTROL_KEYCLOAK_DOMAIN}/realms/prod`
-
-2. Create client `frontend`
-- client id: `frontend`
-- client type: public browser client
+- client id: `shiftcontrol`
 - flow: Authorization Code
 - PKCE: enabled with `S256`
 - client authentication: off
-- valid redirect URIs:
-  - `https://${SHIFTCONTROL_DOMAIN}/*`
-- valid post logout redirect URIs:
-  - `https://${SHIFTCONTROL_DOMAIN}/*`
-- web origins:
-  - `https://${SHIFTCONTROL_DOMAIN}`
-- note:
-  - the frontend also uses `https://${SHIFTCONTROL_DOMAIN}/silent-check-sso.html`
-    for silent SSO checks, which is covered by the redirect URI wildcard
+- valid redirect URIs: `https://shiftcontrol.chaircon.at/*`
+- valid post logout redirect URIs: `https://shiftcontrol.chaircon.at/*`
+- web origins: `https://shiftcontrol.chaircon.at`
 
-3. Create client `internal`
+The frontend also uses silent SSO on:
+
+- `https://shiftcontrol.chaircon.at/silent-check-sso.html`
+
+This browser client is public, so it does not use a client secret.
+
+### Human Admins
+
+Platform admins should simply receive the normal role:
+
+- `admin`
+
+No dedicated `userType=admin` claim is needed anymore.
+
+### Optional Internal OAuth Client
+
+Only if you do not want to use `SHIFTCONTROL_INTERNAL_API_KEY`, create a separate confidential machine client:
+
 - client id: `internal`
 - client type: confidential
-- client authentication: on
 - service accounts: enabled
-- intended flow: OAuth2 `client_credentials`
-- standard flow: disabled
-- implicit flow: disabled
-- set the client secret to the same value as:
-  - `KEYCLOAK_INTERNAL_CLIENT_SECRET`
-- make sure this client can present the authorities:
-  - `admin`
-  - `shiftservice.users.read`
-  so it can perform the same trusted machine calls as the internal API key path
+- intended flow: `client_credentials`
 
-Alternative simpler setup:
-- set `SHIFTCONTROL_INTERNAL_API_KEY` in `.env`
-- the production compose file injects it into:
-  - `shiftservice`
-  - `notificationservice`
-  - `trustservice`
-- those callers will then use `X-ShiftControl-Internal-Api-Key` instead of OAuth
+Its service token should carry the authorities:
 
-4. Configure admin role assignment
-- the current application recognizes platform admins from the realm role:
-  - `admin`
-- assign that role to every user who should be a ShiftControl platform admin
+- `admin`
+- `shiftservice.users.read`
 
-5. Point the deployment at Keycloak
-- `compose.yml` already configures the frontend with:
-  - `KEYCLOAK_URL=https://${SHIFTCONTROL_KEYCLOAK_DOMAIN}`
-  - `KEYCLOAK_REALM=prod`
-  - `KEYCLOAK_CLIENT_ID=frontend`
-- `shiftservice` and `auditservice` already trust:
-  - `https://${SHIFTCONTROL_KEYCLOAK_DOMAIN}/realms/prod`
-  and the internal in-network issuer
-- `notificationservice` and `trustservice` already use:
-  - client id `internal`
-  - the token endpoint of realm `prod`
-  - `KEYCLOAK_INTERNAL_CLIENT_SECRET`
+## Cloudflare Tunnel Setup
 
-### Keycloak Login and Verification Checklist
+This compose uses a remotely managed Cloudflare Tunnel token. To wire it up:
 
-After the stack is up, log in to Keycloak using the admin credentials from `.env`.
+1. In Cloudflare Zero Trust, create or open a tunnel.
+2. Add a published application route:
+- hostname: `shiftcontrol.chaircon.at`
+- service: `http://traefik:80`
+3. Add a replica and copy the tunnel token.
+4. Put that value into:
+- `CLOUDFLARE_TUNNEL_TOKEN`
+5. Start the stack:
 
-Verify the following in realm `prod`:
-
-1. `Clients -> frontend`
-- `Client authentication` should be off because this is a public browser client
-- `Authorization` / `Standard flow` should be enabled
-- `Implicit flow` should be disabled
-- `Valid redirect URIs` should include:
-  - `https://${SHIFTCONTROL_DOMAIN}/*`
-- `Valid post logout redirect URIs` should include:
-  - `https://${SHIFTCONTROL_DOMAIN}/*`
-- `Web origins` should include:
-  - `https://${SHIFTCONTROL_DOMAIN}`
-
-2. `Clients -> internal`
-- client id should be `internal`
-- `Client authentication` should be on
-- `Service accounts roles` should be enabled
-- the client secret should match `KEYCLOAK_INTERNAL_CLIENT_SECRET`
-- the resulting access token should contain:
-  - `admin`
-  - `shiftservice.users.read`
-
-3. `Realm settings`
-- realm name should be `prod`
-- public issuer should resolve to:
-  - `https://${SHIFTCONTROL_KEYCLOAK_DOMAIN}/realms/prod`
-
-4. `Realm roles`
-- create or verify the realm role:
-  - `admin`
-- assign it to the human users who should be platform administrators
-
-### Admin Role Mapping
-
-The current application recognizes platform administrators from normal token
-authorities instead of the old dedicated admin claim.
-
-Recommended Keycloak setup:
-- create a realm role named `admin`
-- assign that role to the human users who should be platform administrators
-
-The backend accepts this admin role from standard token structures such as:
-- `realm_access.roles`
-- `resource_access.<client>.roles`
-- or a flat `roles` claim if your IdP emits one
-
-The legacy `shiftcontrol.admin` scope is still accepted temporarily for rollout
-compatibility, but it should be treated as transitional only.
-
-For user-facing tokens:
-- `shiftservice` and `auditservice` trust the configured OIDC issuer and its
-  allowed issuer list from their mounted YAML config.
-- `notificationservice` trusts the configured JWT authority/issuers and uses
-  either the internal API key or OAuth2 client credentials for internal API access.
-- `trustservice` uses the same internal API key or OAuth2 client credentials for
-  its internal calls to `shiftservice`.
-
-### Optional Bootstrap via Realm Import
-
-If you want a quick bootstrap or a reference setup, the repository includes a
-realm template at `config/realm.json`.
-
-Treat this as:
-- a convenience for first-time setup
-- a dev/local style bootstrap
-- a reference for the exact client and mapper structure
-
-Before starting the stack, render `config/realm.rendered.json` from the template
-so the real internal client secret is not committed to git.
-
-Create the rendered realm file with your real domain and the
-`KEYCLOAK_INTERNAL_CLIENT_SECRET` from `.env`:
-```bash
-escaped_secret="$(printf '%s' "$KEYCLOAK_INTERNAL_CLIENT_SECRET" | sed 's/[\\/&]/\\&/g')"
-sed \
-  -e 's/shiftcontrol.example.com/your-domain.example.com/g' \
-  -e "s/__KEYCLOAK_INTERNAL_CLIENT_SECRET__/$escaped_secret/g" \
-  config/realm.json > config/realm.rendered.json
-```
-
-That render step updates both:
-- `https://shiftcontrol.example.com`
-- `https://keycloak.shiftcontrol.example.com`
-
-It also replaces the `internal` client secret in the realm import so it matches
-`KEYCLOAK_INTERNAL_CLIENT_SECRET`, which internal service consumers read from
-their Docker environment overrides.
-
-The bootstrap realm template also:
-- removes the old dedicated admin claim mapping
-- expects human admins to be granted the normal realm role `admin`
-- preconfigures the `internal` client to emit the authorities
-  `admin` and `shiftservice.users.read` for OAuth-based service-to-service calls
-
-Do not commit `config/realm.rendered.json`. It is only a deployment artifact.
-
-The mounted `config/realm.rendered.json` is imported automatically by Keycloak on
-startup because the container runs with `start --import-realm`.
-
-### Smoke Test
-
-Once the stack is running, a healthy OAuth setup should behave like this:
-- opening `https://${SHIFTCONTROL_DOMAIN}` shows the frontend
-- login redirects the browser to Keycloak on `https://${SHIFTCONTROL_KEYCLOAK_DOMAIN}`
-- after login, the browser returns to `https://${SHIFTCONTROL_DOMAIN}`
-- the frontend can call `/shiftservice` and `/auditservice` with the user's bearer token
-- if `SHIFTCONTROL_INTERNAL_API_KEY` is set, `notificationservice` and `trustservice`
-  can call `shiftservice` internal APIs with `X-ShiftControl-Internal-Api-Key`
-- otherwise, they can fetch tokens for client `internal` and call `shiftservice`
-  internal APIs with OAuth bearer tokens
-
-## Starting the Application
-Start the full production stack with a single command:
 ```bash
 docker compose up -d
 ```
 
-If you want to use Cloudflare Tunnel instead of publishing ports on Traefik, uncomment the `cloudflared` service in `compose.yml` and set `CLOUDFLARE_TUNNEL_TOKEN`.
+Cloudflare documents the token-based Docker run pattern as `cloudflared tunnel --no-autoupdate run --token <TUNNEL_TOKEN>`, which is exactly what the compose file now uses. Sources: [Cloudflare Tunnel token docs](https://developers.cloudflare.com/tunnel/advanced/tunnel-tokens/), [Cloudflare setup guide](https://developers.cloudflare.com/tunnel/setup/).
+
+## Smoke Test
+
+After the containers are up:
+
+1. Open `https://shiftcontrol.chaircon.at`
+2. Confirm the frontend loads.
+3. Start login and verify the browser is redirected to `https://sso.awoostria.at`.
+4. Log in and verify you return to `https://shiftcontrol.chaircon.at`.
+5. Confirm API requests succeed under:
+- `/shiftservice`
+- `/auditservice`
+- `/notifications`
+
+## Dev-Only Realm Import Note
+
+`config/realm.json` is now just a reference / dev bootstrap artifact.
+It is not used by this production compose file anymore because production now relies on your already hosted Keycloak at `https://sso.awoostria.at`.

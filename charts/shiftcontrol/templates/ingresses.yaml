@@ -1,0 +1,112 @@
+{{- if .Values.global.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "main") }}
+  labels:
+    {{- include "shiftcontrol.labels" . | nindent 4 }}
+  {{- with .Values.global.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.global.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.global.domain | quote }}
+      http:
+        paths:
+          - path: /shiftservice
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "shiftservice") }}
+                port:
+                  number: {{ .Values.shiftservice.service.port }}
+          - path: /auditservice
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "auditservice") }}
+                port:
+                  number: {{ .Values.auditservice.service.port }}
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "frontend") }}
+                port:
+                  number: {{ .Values.frontend.service.port }}
+  {{- with .Values.global.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- if .Values.notificationIngress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "notifications") }}
+  labels:
+    {{- include "shiftcontrol.labels" . | nindent 4 }}
+  annotations:
+    {{- with .Values.global.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with .Values.notificationIngress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- with (default .Values.global.ingress.className .Values.notificationIngress.className) }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  rules:
+    - host: {{ default .Values.global.domain .Values.notificationIngress.host | quote }}
+      http:
+        paths:
+          - path: {{ .Values.notificationIngress.path }}
+            pathType: {{ .Values.notificationIngress.pathType }}
+            backend:
+              service:
+                name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "notificationservice") }}
+                port:
+                  number: {{ .Values.notificationservice.service.port }}
+  {{- with (default .Values.global.ingress.tls .Values.notificationIngress.tls) }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- if and .Values.pgadmin.enabled .Values.pgadmin.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "pgadmin") }}
+  labels:
+    {{- include "shiftcontrol.componentLabels" (dict "root" . "component" "pgadmin") | nindent 4 }}
+  {{- with .Values.pgadmin.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.pgadmin.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  rules:
+    - host: {{ default (printf "pgadmin.%s" .Values.global.domain) .Values.pgadmin.ingress.host | quote }}
+      http:
+        paths:
+          - path: {{ .Values.pgadmin.ingress.path }}
+            pathType: {{ .Values.pgadmin.ingress.pathType }}
+            backend:
+              service:
+                name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "pgadmin") }}
+                port:
+                  number: {{ .Values.pgadmin.service.port }}
+  {{- with .Values.pgadmin.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}

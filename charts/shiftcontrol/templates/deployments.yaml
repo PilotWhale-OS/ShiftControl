@@ -1,0 +1,572 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "redis") }}
+  labels:
+    {{- include "shiftcontrol.componentLabels" (dict "root" . "component" "redis") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "redis") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "redis") | nindent 8 }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: redis
+          image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
+          imagePullPolicy: {{ .Values.redis.image.pullPolicy }}
+          ports:
+            - name: redis
+              containerPort: {{ .Values.redis.service.port }}
+          livenessProbe:
+            tcpSocket:
+              port: redis
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: redis
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.redis.resources | nindent 12 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "shiftservice") }}
+  labels:
+    {{- include "shiftcontrol.componentLabels" (dict "root" . "component" "shiftservice") | nindent 4 }}
+spec:
+  replicas: {{ .Values.shiftservice.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "shiftservice") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "shiftservice") | nindent 8 }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: shiftservice
+          image: "{{ .Values.shiftservice.image.repository }}:{{ .Values.shiftservice.image.tag }}"
+          imagePullPolicy: {{ .Values.shiftservice.image.pullPolicy }}
+          env:
+            - name: SHIFTCONTROL_DOMAIN
+              value: {{ .Values.global.domain | quote }}
+            - name: SHIFTCONTROL_OIDC_ISSUER_URI
+              value: {{ .Values.global.oidc.issuerUri | quote }}
+            - name: SHIFTCONTROL_INTERNAL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: internal-api-key
+            - name: POSTGRES_DB
+              value: {{ .Values.postgres.auth.database | quote }}
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: postgres-username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: postgres-password
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://{{ include "shiftcontrol.componentFullname" (dict "root" . "component" "postgres") }}:{{ .Values.postgres.service.port }}/$(POSTGRES_DB)"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "$(POSTGRES_USER)"
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: "$(POSTGRES_PASSWORD)"
+            - name: SPRING_LIQUIBASE_CONTEXTS
+              value: {{ .Values.shiftservice.liquibaseContexts | quote }}
+          {{- with .Values.shiftservice.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.shiftservice.service.port }}
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+            - name: config
+              mountPath: /app/application.yml
+              subPath: application.yml
+          resources:
+            {{- toYaml .Values.shiftservice.resources | nindent 12 }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "shiftservice-config") }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "notificationservice") }}
+  labels:
+    {{- include "shiftcontrol.componentLabels" (dict "root" . "component" "notificationservice") | nindent 4 }}
+spec:
+  replicas: {{ .Values.notificationservice.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "notificationservice") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "notificationservice") | nindent 8 }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: notificationservice
+          image: "{{ .Values.notificationservice.image.repository }}:{{ .Values.notificationservice.image.tag }}"
+          imagePullPolicy: {{ .Values.notificationservice.image.pullPolicy }}
+          env:
+            - name: EMPTY
+              value: empty
+            - name: SHIFTCONTROL_DOMAIN
+              value: {{ .Values.global.domain | quote }}
+            - name: SHIFTCONTROL_OIDC_ISSUER_URI
+              value: {{ .Values.global.oidc.issuerUri | quote }}
+            - name: SHIFTCONTROL_OIDC_TOKEN_URL
+              value: {{ .Values.global.oidc.tokenUrl | quote }}
+            - name: PUBLIC_BASE_URL
+              value: {{ include "shiftcontrol.publicBaseUrl" . | quote }}
+            - name: Email__EnableSending
+              value: {{ .Values.notificationservice.email.enableSending | quote }}
+            - name: Email__SmtpHost
+              value: {{ .Values.notificationservice.email.smtpHost | quote }}
+            - name: Email__SmtpPort
+              value: {{ .Values.notificationservice.email.smtpPort | quote }}
+            - name: Email__FromName
+              value: {{ .Values.notificationservice.email.fromName | quote }}
+            - name: Email__FromEmail
+              value: {{ .Values.notificationservice.email.fromEmail | quote }}
+            - name: Email__SecureSocketOptions
+              value: {{ .Values.notificationservice.email.secureSocketOptions | quote }}
+            - name: RABBITMQ_DEFAULT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: rabbitmq-username
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: rabbitmq-password
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: postgres-username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: postgres-password
+            - name: NOTIFICATIONSERVICE_POSTGRES_DB
+              value: {{ .Values.postgres.auth.notificationDatabase | quote }}
+            - name: SHIFTCONTROL_INTERNAL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: internal-api-key
+            - name: KEYCLOAK_INTERNAL_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: oidc-client-secret
+            - name: Email__SmtpPassword
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: smtp-password
+            - name: Email__SmtpUsername
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: smtp-username
+            - name: Jwt__Authority
+              value: {{ .Values.global.oidc.issuerUri | quote }}
+            - name: Jwt__Issuers__0
+              value: {{ .Values.global.oidc.issuerUri | quote }}
+            - name: SignalR__AllowedOrigins__0
+              value: "$(PUBLIC_BASE_URL)"
+            - name: Frontend__BaseUrl
+              value: "$(PUBLIC_BASE_URL)"
+            - name: RabbitMQ__HostName
+              value: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "rabbitmq") | quote }}
+            - name: RabbitMQ__UserName
+              value: "$(RABBITMQ_DEFAULT_USER)"
+            - name: RabbitMQ__Password
+              value: "$(RABBITMQ_DEFAULT_PASS)"
+            - name: Db__ConnectionString
+              value: "Server={{ include "shiftcontrol.componentFullname" (dict "root" . "component" "postgres") }};Port={{ .Values.postgres.service.port }};Database=$(NOTIFICATIONSERVICE_POSTGRES_DB);User Id=$(POSTGRES_USER);Password=$(POSTGRES_PASSWORD);"
+            - name: Shiftservice__BaseUrl
+              value: "http://{{ include "shiftcontrol.componentFullname" (dict "root" . "component" "shiftservice") }}:{{ .Values.shiftservice.service.port }}/"
+            - name: Shiftservice__ApiKey
+              value: "$(SHIFTCONTROL_INTERNAL_API_KEY)"
+            - name: OAuth2__Client__TokenUrl
+              value: {{ .Values.global.oidc.tokenUrl | quote }}
+            - name: OAuth2__Client__ClientSecret
+              value: "$(KEYCLOAK_INTERNAL_CLIENT_SECRET)"
+          {{- with .Values.notificationservice.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.notificationservice.service.port }}
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+            - name: config
+              mountPath: /app/appsettings.json
+              subPath: appsettings.json
+          resources:
+            {{- toYaml .Values.notificationservice.resources | nindent 12 }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "notificationservice-config") }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "auditservice") }}
+  labels:
+    {{- include "shiftcontrol.componentLabels" (dict "root" . "component" "auditservice") | nindent 4 }}
+spec:
+  replicas: {{ .Values.auditservice.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "auditservice") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "auditservice") | nindent 8 }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: auditservice
+          image: "{{ .Values.auditservice.image.repository }}:{{ .Values.auditservice.image.tag }}"
+          imagePullPolicy: {{ .Values.auditservice.image.pullPolicy }}
+          env:
+            - name: SHIFTCONTROL_DOMAIN
+              value: {{ .Values.global.domain | quote }}
+            - name: SHIFTCONTROL_OIDC_ISSUER_URI
+              value: {{ .Values.global.oidc.issuerUri | quote }}
+            - name: RABBITMQ_DEFAULT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: rabbitmq-username
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: rabbitmq-password
+            - name: POSTGRES_DB
+              value: {{ .Values.postgres.auth.database | quote }}
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: postgres-username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: postgres-password
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://{{ include "shiftcontrol.componentFullname" (dict "root" . "component" "postgres") }}:{{ .Values.postgres.service.port }}/$(POSTGRES_DB)"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "$(POSTGRES_USER)"
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: "$(POSTGRES_PASSWORD)"
+            - name: SPRING_RABBITMQ_HOST
+              value: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "rabbitmq") | quote }}
+            - name: SPRING_RABBITMQ_PORT
+              value: {{ .Values.rabbitmq.service.amqpPort | quote }}
+          {{- with .Values.auditservice.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.auditservice.service.port }}
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+            - name: config
+              mountPath: /app/application.yml
+              subPath: application.yml
+          resources:
+            {{- toYaml .Values.auditservice.resources | nindent 12 }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "auditservice-config") }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "trustservice") }}
+  labels:
+    {{- include "shiftcontrol.componentLabels" (dict "root" . "component" "trustservice") | nindent 4 }}
+spec:
+  replicas: {{ .Values.trustservice.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "trustservice") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "trustservice") | nindent 8 }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: trustservice
+          image: "{{ .Values.trustservice.image.repository }}:{{ .Values.trustservice.image.tag }}"
+          imagePullPolicy: {{ .Values.trustservice.image.pullPolicy }}
+          env:
+            - name: SHIFTCONTROL_DOMAIN
+              value: {{ .Values.global.domain | quote }}
+            - name: SHIFTCONTROL_OIDC_TOKEN_URL
+              value: {{ .Values.global.oidc.tokenUrl | quote }}
+            - name: RABBITMQ_DEFAULT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: rabbitmq-username
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: rabbitmq-password
+            - name: POSTGRES_DB
+              value: {{ .Values.postgres.auth.database | quote }}
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: postgres-username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: postgres-password
+            - name: TRUST_SHIFTSERVICE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: internal-api-key
+            - name: TRUST_OAUTH2_CLIENT_CLIENTSECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: oidc-client-secret
+            - name: TRUST_SHIFTSERVICE_BASE_URL
+              value: "http://{{ include "shiftcontrol.componentFullname" (dict "root" . "component" "shiftservice") }}:{{ .Values.shiftservice.service.port }}/"
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://{{ include "shiftcontrol.componentFullname" (dict "root" . "component" "postgres") }}:{{ .Values.postgres.service.port }}/$(POSTGRES_DB)"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "$(POSTGRES_USER)"
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: "$(POSTGRES_PASSWORD)"
+            - name: SPRING_DATA_REDIS_HOST
+              value: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "redis") | quote }}
+            - name: SPRING_DATA_REDIS_PORT
+              value: {{ .Values.redis.service.port | quote }}
+            - name: SPRING_RABBITMQ_HOST
+              value: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "rabbitmq") | quote }}
+            - name: SPRING_RABBITMQ_PORT
+              value: {{ .Values.rabbitmq.service.amqpPort | quote }}
+          {{- with .Values.trustservice.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.trustservice.service.port }}
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+            - name: config
+              mountPath: /app/application.yml
+              subPath: application.yml
+          resources:
+            {{- toYaml .Values.trustservice.resources | nindent 12 }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "trustservice-config") }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "frontend") }}
+  labels:
+    {{- include "shiftcontrol.componentLabels" (dict "root" . "component" "frontend") | nindent 4 }}
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "frontend") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "frontend") | nindent 8 }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: frontend
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+          imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+          env:
+            - name: KEYCLOAK_URL
+              value: {{ .Values.global.oidc.baseUrl | quote }}
+            - name: KEYCLOAK_REALM
+              value: {{ .Values.global.oidc.realm | quote }}
+            - name: KEYCLOAK_CLIENT_ID
+              value: {{ .Values.global.oidc.clientId | quote }}
+            - name: SHIFTSERVICE_BASE_PATH
+              value: {{ printf "%s/shiftservice" (include "shiftcontrol.publicBaseUrl" .) | quote }}
+            - name: AUDITSERVICE_BASE_PATH
+              value: {{ printf "%s/auditservice" (include "shiftcontrol.publicBaseUrl" .) | quote }}
+            - name: NOTIFICATIONSERVICE_BASE_PATH
+              value: {{ printf "%s/notifications" (include "shiftcontrol.publicBaseUrl" .) | quote }}
+          {{- with .Values.frontend.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.frontend.service.port }}
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.frontend.resources | nindent 12 }}
+---
+{{- if .Values.pgadmin.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "pgadmin") }}
+  labels:
+    {{- include "shiftcontrol.componentLabels" (dict "root" . "component" "pgadmin") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "pgadmin") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "shiftcontrol.componentSelectorLabels" (dict "root" . "component" "pgadmin") | nindent 8 }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: pgadmin
+          image: "{{ .Values.pgadmin.image.repository }}:{{ .Values.pgadmin.image.tag }}"
+          imagePullPolicy: {{ .Values.pgadmin.image.pullPolicy }}
+          env:
+            - name: PGADMIN_DEFAULT_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: pgadmin-email
+            - name: PGADMIN_DEFAULT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: pgadmin-password
+          ports:
+            - name: http
+              containerPort: {{ .Values.pgadmin.service.port }}
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/pgadmin
+          resources:
+            {{- toYaml .Values.pgadmin.resources | nindent 12 }}
+      volumes:
+        - name: data
+          {{- if .Values.pgadmin.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "pgadmin") }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+{{- end }}

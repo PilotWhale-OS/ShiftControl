@@ -1,0 +1,74 @@
+global:
+  domain: shiftcontrol.site.com
+  scheme: https
+  ingress:
+    enabled: true
+    className: nginx
+    tls:
+      - hosts:
+          - shiftcontrol.site.com
+        secretName: shiftcontrol-tls
+  oidc:
+    baseUrl: https://auth.site.com
+    realm: prod
+    clientId: shiftcontrol
+    issuerUri: https://auth.site.com/realms/prod
+    tokenUrl: https://auth.site.com/realms/prod/protocol/openid-connect/token
+  internalApiKey: change-me-to-a-long-random-secret
+  keycloakInternalClientSecret: ""
+
+postgres:
+  auth:
+    username: shiftcontrol
+    password: change-me
+    database: shiftservice
+    notificationDatabase: notificationservice
+
+rabbitmq:
+  auth:
+    username: shiftcontrol
+    password: change-me
+
+# Pin application image tags here for reproducible production deployments.
+# shiftservice:
+#   image:
+#     tag: "x.y.z"
+# notificationservice:
+#   image:
+#     tag: "x.y.z"
+# auditservice:
+#   image:
+#     tag: "x.y.z"
+# trustservice:
+#   image:
+#     tag: "x.y.z"
+# frontend:
+#   image:
+#     tag: "x.y.z"
+
+notificationIngress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+  tls:
+    - hosts:
+        - shiftcontrol.site.com
+      secretName: shiftcontrol-tls
+
+notificationservice:
+  email:
+    enableSending: false
+    smtpHost: smtp.gmail.com
+    smtpPort: 587
+    smtpUsername: notifications@example.com
+    smtpPassword: change-me
+    fromName: ShiftControl Notifications
+    fromEmail: noreply@shiftcontrol.site.com
+    secureSocketOptions: StartTls
+
+pgadmin:
+  enabled: false
+  ingress:
+    enabled: false
