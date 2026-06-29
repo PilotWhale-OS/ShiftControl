@@ -12,13 +12,11 @@ logging:
 
 oidc:
   provider:
-    issuer-uri: http://keycloak:8080/realms/prod
+    issuer-uri: ${SHIFTCONTROL_OIDC_ISSUER_URI}
     allowed-issuers:
-    - https://${SHIFTCONTROL_KEYCLOAK_DOMAIN:keycloak.shiftcontrol.example.com}/realms/prod
-    - http://keycloak:8080/realms/prod
+    - ${SHIFTCONTROL_OIDC_ISSUER_URI}
 
 shiftcontrol:
-  domain: ${SHIFTCONTROL_DOMAIN:shiftcontrol.example.com}
-  keycloak-domain: ${SHIFTCONTROL_KEYCLOAK_DOMAIN:keycloak.shiftcontrol.example.com}
+  domain: ${SHIFTCONTROL_DOMAIN}
   internal-api:
     key: ${SHIFTCONTROL_INTERNAL_API_KEY:}

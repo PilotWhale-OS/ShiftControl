@@ -1882,7 +1882,7 @@
       ]
     },
     {
-      "clientId": "frontend",
+      "clientId": "shiftcontrol",
       "name": "ShiftControl",
       "description": "ShiftControl Dashboard",
       "rootUrl": "",
@@ -1894,10 +1894,10 @@
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
         "http://localhost:4200/*",
-        "http://frontend.127.0.0.1.nip.io/*"
+        "http://shiftcontrol.127.0.0.1.nip.io/*"
       ],
       "webOrigins": [
-        "http://frontend.127.0.0.1.nip.io",
+        "http://shiftcontrol.127.0.0.1.nip.io",
         "http://localhost:4200"
       ],
       "notBefore": 0,
@@ -1912,7 +1912,7 @@
       "protocol": "openid-connect",
       "attributes": {
         "oidc.ciba.grant.enabled": "false",
-        "post.logout.redirect.uris": "http://localhost:4200/*##http://frontend.127.0.0.1.nip.io/*",
+        "post.logout.redirect.uris": "http://localhost:4200/*##http://shiftcontrol.127.0.0.1.nip.io/*",
         "oauth2.device.authorization.grant.enabled": "false",
         "backchannel.logout.session.required": "true",
         "backchannel.logout.revoke.offline.tokens": "false"

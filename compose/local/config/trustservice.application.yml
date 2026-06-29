@@ -2,8 +2,8 @@ spring:
   rabbitmq:
     host: rabbitmq
     port: 5672
-    username: shiftcontrol
-    password: password
+    username: ${RABBITMQ_DEFAULT_USER}
+    password: ${RABBITMQ_DEFAULT_PASS}
   jpa:
     hibernate:
       ddl-auto: none
@@ -13,9 +13,20 @@ spring:
       port: 6379
 
 trust:
+  shiftservice:
+    baseUrl: http://shiftservice:8080/
+    endpoint: api/v1/trust-alerts
+    apiKey: ${TRUST_SHIFTSERVICE_API_KEY:}
+  oauth2:
+    client:
+      tokenUrl: ${SHIFTCONTROL_OIDC_TOKEN_URL}
+      clientId: internal
+      clientSecret: ${TRUST_OAUTH2_CLIENT_CLIENTSECRET:}
+      scope:
   rabbitmq:
     exchange: shiftcontrol
     queue: trust-service
     routing-key: shiftcontrol.#
 
-
+shiftcontrol:
+  domain: ${SHIFTCONTROL_DOMAIN}

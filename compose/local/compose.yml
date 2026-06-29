@@ -1,4 +1,249 @@
-include:
-  - ./infra.compose.yml
-  - ./backend.compose.yml
-  - ./frontend.compose.yml
+services:
+  traefik:
+    image: traefik:latest
+    container_name: shiftcontrol-infra-traefik
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config/traefik.yml:/traefik.yml:ro
+      - ./config/traefik-dynamic.yml:/configurations/traefik-dynamic.yml:ro
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.traefik.entrypoints=web
+      - traefik.http.routers.traefik.rule=Host(`${TRAEFIK_HOST:-traefik.127.0.0.1.nip.io}`)
+      - traefik.http.routers.traefik.service=api@internal
+    ports:
+      - "80:80"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.0
+    container_name: shiftcontrol-infra-keycloak
+    hostname: keycloak
+    restart: unless-stopped
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    command:
+      - start-dev
+      - --import-realm
+      - --log-level=INFO
+    volumes:
+      - ./config/realm-dev.json:/opt/keycloak/data/import/realm-dev.json:ro
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.keycloak.entrypoints=web
+      - traefik.http.routers.keycloak.rule=Host(`${SHIFTCONTROL_OIDC_HOST:-keycloak.127.0.0.1.nip.io}`)
+      - traefik.http.services.keycloak.loadbalancer.server.port=8080
+
+  postgres:
+    image: postgres:latest
+    container_name: shiftcontrol-infra-postgres
+    hostname: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-shiftcontrol}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-shiftservice}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-shiftcontrol} -d ${POSTGRES_DB:-shiftservice}"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: shiftcontrol-infra-pgadmin
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@admin.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.pgadmin.entrypoints=web
+      - traefik.http.routers.pgadmin.rule=Host(`${PGADMIN_HOST:-pgadmin.127.0.0.1.nip.io}`)
+      - traefik.http.services.pgadmin.loadbalancer.server.port=80
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: shiftcontrol-infra-rabbitmq
+    hostname: rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-shiftcontrol}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-password}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    container_name: shiftcontrol-infra-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  shiftservice:
+    image: ghcr.io/pilotwhale-os/shiftcontrol/shiftservice:latest
+    container_name: shiftcontrol-shiftservice
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SHIFTCONTROL_DOMAIN: ${SHIFTCONTROL_DOMAIN:-shiftcontrol.127.0.0.1.nip.io}
+      SHIFTCONTROL_OIDC_BASE_URL: ${SHIFTCONTROL_OIDC_BASE_URL:-http://keycloak.127.0.0.1.nip.io}
+      SHIFTCONTROL_OIDC_REALM: ${SHIFTCONTROL_OIDC_REALM:-dev}
+      SHIFTCONTROL_OIDC_ISSUER_URI: ${SHIFTCONTROL_OIDC_ISSUER_URI:-http://keycloak:8080/realms/dev}
+      SHIFTCONTROL_OIDC_PUBLIC_ISSUER_URI: ${SHIFTCONTROL_OIDC_PUBLIC_ISSUER_URI:-http://keycloak.127.0.0.1.nip.io/realms/dev}
+      SHIFTCONTROL_INTERNAL_API_KEY: ${SHIFTCONTROL_INTERNAL_API_KEY:-local-dev-api-key}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-shiftservice}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-shiftcontrol}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      SPRING_LIQUIBASE_CONTEXTS: ${SPRING_LIQUIBASE_CONTEXTS:-local}
+    volumes:
+      - ./config/shiftservice.application.yml:/app/application.yml:ro
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.shiftservice.entrypoints=web
+      - traefik.http.routers.shiftservice.rule=Host(`${SHIFTCONTROL_DOMAIN:-shiftcontrol.127.0.0.1.nip.io}`) && PathPrefix(`/shiftservice`)
+      - traefik.http.routers.shiftservice.priority=100
+      - traefik.http.services.shiftservice.loadbalancer.server.port=8080
+
+  notificationservice:
+    image: ghcr.io/pilotwhale-os/shiftcontrol/notificationservice:latest
+    container_name: shiftcontrol-notificationservice
+    restart: unless-stopped
+    depends_on:
+      shiftservice:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      SHIFTCONTROL_DOMAIN: ${SHIFTCONTROL_DOMAIN:-shiftcontrol.127.0.0.1.nip.io}
+      EMPTY: empty
+      Jwt__Authority: ${SHIFTCONTROL_OIDC_ISSUER_URI:-http://keycloak:8080/realms/dev}
+      Jwt__Issuers__0: ${SHIFTCONTROL_OIDC_ISSUER_URI:-http://keycloak:8080/realms/dev}
+      Jwt__Issuers__1: ${SHIFTCONTROL_OIDC_PUBLIC_ISSUER_URI:-http://keycloak.127.0.0.1.nip.io/realms/dev}
+      SignalR__AllowedOrigins__0: http://${SHIFTCONTROL_DOMAIN:-shiftcontrol.127.0.0.1.nip.io}
+      Frontend__BaseUrl: http://${SHIFTCONTROL_DOMAIN:-shiftcontrol.127.0.0.1.nip.io}
+      RabbitMQ__UserName: ${RABBITMQ_DEFAULT_USER:-shiftcontrol}
+      RabbitMQ__Password: ${RABBITMQ_DEFAULT_PASS:-password}
+      Db__ConnectionString: Server=postgres;Port=5432;Database=${NOTIFICATIONSERVICE_POSTGRES_DB:-notificationservice};User Id=${POSTGRES_USER:-shiftcontrol};Password=${POSTGRES_PASSWORD:-password};
+      Shiftservice__ApiKey: ${SHIFTCONTROL_INTERNAL_API_KEY:-local-dev-api-key}
+      OAuth2__Client__TokenUrl: ${SHIFTCONTROL_OIDC_TOKEN_URL:-http://keycloak:8080/realms/dev/protocol/openid-connect/token}
+      OAuth2__Client__ClientSecret: ${KEYCLOAK_INTERNAL_CLIENT_SECRET:-}
+    volumes:
+      - ./config/notificationservice.appsettings.json:/app/appsettings.json:ro
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.notificationservice.entrypoints=web
+      - traefik.http.routers.notificationservice.rule=Host(`${SHIFTCONTROL_DOMAIN:-shiftcontrol.127.0.0.1.nip.io}`) && PathPrefix(`/notifications`)
+      - traefik.http.routers.notificationservice.priority=100
+      - traefik.http.routers.notificationservice.middlewares=notificationservice-strip-prefix
+      - traefik.http.middlewares.notificationservice-strip-prefix.stripprefix.prefixes=/notifications
+      - traefik.http.services.notificationservice.loadbalancer.server.port=8080
+
+  auditservice:
+    image: ghcr.io/pilotwhale-os/shiftcontrol/auditservice:latest
+    container_name: shiftcontrol-auditservice
+    restart: unless-stopped
+    depends_on:
+      shiftservice:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      SHIFTCONTROL_DOMAIN: ${SHIFTCONTROL_DOMAIN:-shiftcontrol.127.0.0.1.nip.io}
+      SHIFTCONTROL_OIDC_BASE_URL: ${SHIFTCONTROL_OIDC_BASE_URL:-http://keycloak.127.0.0.1.nip.io}
+      SHIFTCONTROL_OIDC_REALM: ${SHIFTCONTROL_OIDC_REALM:-dev}
+      SHIFTCONTROL_OIDC_ISSUER_URI: ${SHIFTCONTROL_OIDC_ISSUER_URI:-http://keycloak:8080/realms/dev}
+      SHIFTCONTROL_OIDC_PUBLIC_ISSUER_URI: ${SHIFTCONTROL_OIDC_PUBLIC_ISSUER_URI:-http://keycloak.127.0.0.1.nip.io/realms/dev}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-shiftcontrol}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-password}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-shiftservice}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-shiftcontrol}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-password}
+    volumes:
+      - ./config/auditservice.application.yml:/app/application.yml:ro
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.auditservice.entrypoints=web
+      - traefik.http.routers.auditservice.rule=Host(`${SHIFTCONTROL_DOMAIN:-shiftcontrol.127.0.0.1.nip.io}`) && PathPrefix(`/auditservice`)
+      - traefik.http.routers.auditservice.priority=100
+      - traefik.http.services.auditservice.loadbalancer.server.port=8089
+
+  trustservice:
+    image: ghcr.io/pilotwhale-os/shiftcontrol/trustservice:latest
+    container_name: shiftcontrol-trustservice
+    restart: unless-stopped
+    depends_on:
+      shiftservice:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SHIFTCONTROL_DOMAIN: ${SHIFTCONTROL_DOMAIN:-shiftcontrol.127.0.0.1.nip.io}
+      SHIFTCONTROL_OIDC_TOKEN_URL: ${SHIFTCONTROL_OIDC_TOKEN_URL:-http://keycloak:8080/realms/dev/protocol/openid-connect/token}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-shiftcontrol}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-password}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-shiftservice}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-shiftcontrol}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      TRUST_SHIFTSERVICE_API_KEY: ${SHIFTCONTROL_INTERNAL_API_KEY:-local-dev-api-key}
+      TRUST_OAUTH2_CLIENT_CLIENTSECRET: ${KEYCLOAK_INTERNAL_CLIENT_SECRET:-}
+    volumes:
+      - ./config/trustservice.application.yml:/app/application.yml:ro
+
+  shiftcontrol-frontend:
+    image: ghcr.io/pilotwhale-os/shiftcontrol/dashboard:latest
+    container_name: shiftcontrol-dashboard
+    restart: unless-stopped
+    environment:
+      KEYCLOAK_URL: ${SHIFTCONTROL_OIDC_BASE_URL:-http://keycloak.127.0.0.1.nip.io}
+      KEYCLOAK_REALM: ${SHIFTCONTROL_OIDC_REALM:-dev}
+      KEYCLOAK_CLIENT_ID: ${SHIFTCONTROL_OIDC_CLIENT_ID:-shiftcontrol}
+      SHIFTSERVICE_BASE_PATH: http://${SHIFTCONTROL_DOMAIN:-shiftcontrol.127.0.0.1.nip.io}/shiftservice
+      AUDITSERVICE_BASE_PATH: http://${SHIFTCONTROL_DOMAIN:-shiftcontrol.127.0.0.1.nip.io}/auditservice
+      NOTIFICATIONSERVICE_BASE_PATH: http://${SHIFTCONTROL_DOMAIN:-shiftcontrol.127.0.0.1.nip.io}/notifications
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.frontend.rule=Host(`${SHIFTCONTROL_DOMAIN:-shiftcontrol.127.0.0.1.nip.io}`)
+      - traefik.http.routers.frontend.entrypoints=web
+      - traefik.http.routers.frontend.priority=1
+      - traefik.http.services.frontend.loadbalancer.server.port=8080
+
+volumes:
+  postgres-data:
+  pgadmin-data:
+  rabbitmq-data:
