@@ -1,5 +1,10 @@
 # ShiftControl Helm Chart
 
+The Chart Repo can be added via:
+```bash
+helm repo add shiftcontrol https://pilotwhale-os.github.io/ShiftControl
+```
+
 This chart deploys the production ShiftControl stack on Kubernetes with:
 
 - external OIDC / Keycloak only
