@@ -76,6 +76,13 @@ app.kubernetes.io/component: {{ .component }}
 {{- end -}}
 {{- end -}}
 
+{{- define "shiftcontrol.probeSpec" -}}
+{{- $probe := . -}}
+{{- if and $probe (kindIs "map" $probe) (or (hasKey $probe "exec") (hasKey $probe "grpc") (hasKey $probe "httpGet") (hasKey $probe "tcpSocket")) -}}
+{{- toYaml $probe -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "shiftcontrol.validateValues" -}}
 {{- if not .Values.existingSecret }}
   {{- if not .Values.global.internalApiKey }}

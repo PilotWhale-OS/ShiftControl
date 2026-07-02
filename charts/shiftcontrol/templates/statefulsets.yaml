@@ -50,11 +50,11 @@ spec:
           ports:
             - name: postgres
               containerPort: {{ .Values.postgres.service.port }}
-          {{- with .Values.postgres.livenessProbe }}
+          {{- with (include "shiftcontrol.probeSpec" .Values.postgres.livenessProbe | fromYaml) }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.postgres.readinessProbe }}
+          {{- with (include "shiftcontrol.probeSpec" .Values.postgres.readinessProbe | fromYaml) }}
           readinessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -127,11 +127,11 @@ spec:
               containerPort: {{ .Values.rabbitmq.service.amqpPort }}
             - name: management
               containerPort: {{ .Values.rabbitmq.service.managementPort }}
-          {{- with .Values.rabbitmq.livenessProbe }}
+          {{- with (include "shiftcontrol.probeSpec" .Values.rabbitmq.livenessProbe | fromYaml) }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.rabbitmq.readinessProbe }}
+          {{- with (include "shiftcontrol.probeSpec" .Values.rabbitmq.readinessProbe | fromYaml) }}
           readinessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}

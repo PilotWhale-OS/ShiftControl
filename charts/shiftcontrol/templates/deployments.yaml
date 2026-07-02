@@ -33,11 +33,11 @@ spec:
           ports:
             - name: redis
               containerPort: {{ .Values.redis.service.port }}
-          {{- with .Values.redis.livenessProbe }}
+          {{- with (include "shiftcontrol.probeSpec" .Values.redis.livenessProbe | fromYaml) }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.redis.readinessProbe }}
+          {{- with (include "shiftcontrol.probeSpec" .Values.redis.readinessProbe | fromYaml) }}
           readinessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -112,11 +112,11 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.shiftservice.service.port }}
-          {{- with .Values.shiftservice.livenessProbe }}
+          {{- with (include "shiftcontrol.probeSpec" .Values.shiftservice.livenessProbe | fromYaml) }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.shiftservice.readinessProbe }}
+          {{- with (include "shiftcontrol.probeSpec" .Values.shiftservice.readinessProbe | fromYaml) }}
           readinessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -258,11 +258,11 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.notificationservice.service.port }}
-          {{- with .Values.notificationservice.livenessProbe }}
+          {{- with (include "shiftcontrol.probeSpec" .Values.notificationservice.livenessProbe | fromYaml) }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.notificationservice.readinessProbe }}
+          {{- with (include "shiftcontrol.probeSpec" .Values.notificationservice.readinessProbe | fromYaml) }}
           readinessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -352,11 +352,11 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.auditservice.service.port }}
-          {{- with .Values.auditservice.livenessProbe }}
+          {{- with (include "shiftcontrol.probeSpec" .Values.auditservice.livenessProbe | fromYaml) }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.auditservice.readinessProbe }}
+          {{- with (include "shiftcontrol.probeSpec" .Values.auditservice.readinessProbe | fromYaml) }}
           readinessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -462,11 +462,11 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.trustservice.service.port }}
-          {{- with .Values.trustservice.livenessProbe }}
+          {{- with (include "shiftcontrol.probeSpec" .Values.trustservice.livenessProbe | fromYaml) }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.trustservice.readinessProbe }}
+          {{- with (include "shiftcontrol.probeSpec" .Values.trustservice.readinessProbe | fromYaml) }}
           readinessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -532,11 +532,11 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.frontend.service.port }}
-          {{- with .Values.frontend.livenessProbe }}
+          {{- with (include "shiftcontrol.probeSpec" .Values.frontend.livenessProbe | fromYaml) }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.frontend.readinessProbe }}
+          {{- with (include "shiftcontrol.probeSpec" .Values.frontend.readinessProbe | fromYaml) }}
           readinessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -590,11 +590,11 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.pgadmin.service.port }}
-          {{- with .Values.pgadmin.livenessProbe }}
+          {{- with (include "shiftcontrol.probeSpec" .Values.pgadmin.livenessProbe | fromYaml) }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.pgadmin.readinessProbe }}
+          {{- with (include "shiftcontrol.probeSpec" .Values.pgadmin.readinessProbe | fromYaml) }}
           readinessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
