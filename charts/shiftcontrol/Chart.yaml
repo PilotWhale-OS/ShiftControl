@@ -2,5 +2,5 @@ apiVersion: v2
 name: shiftcontrol
 description: Production Helm chart for ShiftControl with external OIDC and Kubernetes-native ingress routing
 type: application
-version: 0.1.7
+version: 0.1.8
 appVersion: "latest"

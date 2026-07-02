@@ -32,6 +32,9 @@ postgres:
     password: change-me
     database: shiftservice
     notificationDatabase: notificationservice
+  extraEnv:
+    - name: PGDATA
+      value: /var/lib/postgresql/data/pgdata
   podSecurityContext:
     fsGroup: 999
   containerSecurityContext:
