@@ -45,6 +45,16 @@ postgres:
       value: /var/lib/postgresql/data/pgdata
   service:
     port: 5432
+  livenessProbe:
+    tcpSocket:
+      port: postgres
+    initialDelaySeconds: 15
+    periodSeconds: 10
+  readinessProbe:
+    tcpSocket:
+      port: postgres
+    initialDelaySeconds: 5
+    periodSeconds: 10
   persistence:
     enabled: true
     accessMode: ReadWriteOnce
@@ -74,6 +84,16 @@ rabbitmq:
   service:
     amqpPort: 5672
     managementPort: 15672
+  livenessProbe:
+    tcpSocket:
+      port: amqp
+    initialDelaySeconds: 20
+    periodSeconds: 15
+  readinessProbe:
+    tcpSocket:
+      port: amqp
+    initialDelaySeconds: 10
+    periodSeconds: 10
   persistence:
     enabled: true
     accessMode: ReadWriteOnce
@@ -94,6 +114,16 @@ redis:
     pullPolicy: IfNotPresent
   service:
     port: 6379
+  livenessProbe:
+    tcpSocket:
+      port: redis
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  readinessProbe:
+    tcpSocket:
+      port: redis
+    initialDelaySeconds: 5
+    periodSeconds: 10
   podSecurityContext: {}
   containerSecurityContext: {}
   resources:
@@ -112,6 +142,16 @@ shiftservice:
     pullPolicy: IfNotPresent
   service:
     port: 8080
+  livenessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 20
+    periodSeconds: 15
+  readinessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 10
   liquibaseContexts: prod
   podSecurityContext: {}
   containerSecurityContext: {}
@@ -132,6 +172,16 @@ notificationservice:
     pullPolicy: IfNotPresent
   service:
     port: 8080
+  livenessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 20
+    periodSeconds: 15
+  readinessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 10
   email:
     enableSending: false
     smtpHost: smtp.gmail.com
@@ -160,6 +210,16 @@ auditservice:
     pullPolicy: IfNotPresent
   service:
     port: 8089
+  livenessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 20
+    periodSeconds: 15
+  readinessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 10
   podSecurityContext: {}
   containerSecurityContext: {}
   resources:
@@ -179,6 +239,16 @@ trustservice:
     pullPolicy: IfNotPresent
   service:
     port: 8080
+  livenessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 20
+    periodSeconds: 15
+  readinessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 10
   podSecurityContext: {}
   containerSecurityContext: {}
   resources:
@@ -198,6 +268,16 @@ frontend:
     pullPolicy: IfNotPresent
   service:
     port: 8080
+  livenessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 20
+    periodSeconds: 15
+  readinessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 10
   podSecurityContext: {}
   containerSecurityContext:
     runAsUser: 100
@@ -232,6 +312,16 @@ pgadmin:
     password: ""
   service:
     port: 80
+  livenessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 20
+    periodSeconds: 15
+  readinessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 10
   persistence:
     enabled: true
     accessMode: ReadWriteOnce

@@ -33,16 +33,14 @@ spec:
           ports:
             - name: redis
               containerPort: {{ .Values.redis.service.port }}
+          {{- with .Values.redis.livenessProbe }}
           livenessProbe:
-            tcpSocket:
-              port: redis
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.redis.readinessProbe }}
           readinessProbe:
-            tcpSocket:
-              port: redis
-            initialDelaySeconds: 5
-            periodSeconds: 10
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           resources:
             {{- toYaml .Values.redis.resources | nindent 12 }}
 ---
@@ -114,16 +112,14 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.shiftservice.service.port }}
+          {{- with .Values.shiftservice.livenessProbe }}
           livenessProbe:
-            tcpSocket:
-              port: http
-            initialDelaySeconds: 20
-            periodSeconds: 15
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.shiftservice.readinessProbe }}
           readinessProbe:
-            tcpSocket:
-              port: http
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: config
               mountPath: /app/application.yml
@@ -262,16 +258,14 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.notificationservice.service.port }}
+          {{- with .Values.notificationservice.livenessProbe }}
           livenessProbe:
-            tcpSocket:
-              port: http
-            initialDelaySeconds: 20
-            periodSeconds: 15
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.notificationservice.readinessProbe }}
           readinessProbe:
-            tcpSocket:
-              port: http
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: config
               mountPath: /app/appsettings.json
@@ -358,16 +352,14 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.auditservice.service.port }}
+          {{- with .Values.auditservice.livenessProbe }}
           livenessProbe:
-            tcpSocket:
-              port: http
-            initialDelaySeconds: 20
-            periodSeconds: 15
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.auditservice.readinessProbe }}
           readinessProbe:
-            tcpSocket:
-              port: http
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: config
               mountPath: /app/application.yml
@@ -470,16 +462,14 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.trustservice.service.port }}
+          {{- with .Values.trustservice.livenessProbe }}
           livenessProbe:
-            tcpSocket:
-              port: http
-            initialDelaySeconds: 20
-            periodSeconds: 15
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.trustservice.readinessProbe }}
           readinessProbe:
-            tcpSocket:
-              port: http
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: config
               mountPath: /app/application.yml
@@ -542,16 +532,14 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.frontend.service.port }}
+          {{- with .Values.frontend.livenessProbe }}
           livenessProbe:
-            tcpSocket:
-              port: http
-            initialDelaySeconds: 20
-            periodSeconds: 15
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.frontend.readinessProbe }}
           readinessProbe:
-            tcpSocket:
-              port: http
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           resources:
             {{- toYaml .Values.frontend.resources | nindent 12 }}
 ---
@@ -602,16 +590,14 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.pgadmin.service.port }}
+          {{- with .Values.pgadmin.livenessProbe }}
           livenessProbe:
-            tcpSocket:
-              port: http
-            initialDelaySeconds: 20
-            periodSeconds: 15
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.pgadmin.readinessProbe }}
           readinessProbe:
-            tcpSocket:
-              port: http
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: data
               mountPath: /var/lib/pgadmin

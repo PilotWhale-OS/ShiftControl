@@ -35,6 +35,16 @@ postgres:
   extraEnv:
     - name: PGDATA
       value: /var/lib/postgresql/data/pgdata
+  livenessProbe:
+    tcpSocket:
+      port: postgres
+    initialDelaySeconds: 15
+    periodSeconds: 10
+  readinessProbe:
+    tcpSocket:
+      port: postgres
+    initialDelaySeconds: 5
+    periodSeconds: 10
   podSecurityContext:
     fsGroup: 999
   containerSecurityContext:
@@ -52,6 +62,16 @@ rabbitmq:
   auth:
     username: shiftcontrol
     password: change-me
+  livenessProbe:
+    tcpSocket:
+      port: amqp
+    initialDelaySeconds: 20
+    periodSeconds: 15
+  readinessProbe:
+    tcpSocket:
+      port: amqp
+    initialDelaySeconds: 10
+    periodSeconds: 10
   resources:
     requests:
       cpu: 150m
@@ -61,6 +81,16 @@ rabbitmq:
       memory: 512Mi
 
 redis:
+  livenessProbe:
+    tcpSocket:
+      port: redis
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  readinessProbe:
+    tcpSocket:
+      port: redis
+    initialDelaySeconds: 5
+    periodSeconds: 10
   resources:
     requests:
       cpu: 50m
@@ -73,6 +103,16 @@ redis:
 # shiftservice:
 #   image:
 #     tag: "x.y.z"
+#   livenessProbe:
+#     tcpSocket:
+#       port: http
+#     initialDelaySeconds: 20
+#     periodSeconds: 15
+#   readinessProbe:
+#     tcpSocket:
+#       port: http
+#     initialDelaySeconds: 10
+#     periodSeconds: 10
 #   resources:
 #     requests:
 #       cpu: 100m
@@ -83,6 +123,16 @@ redis:
 # notificationservice:
 #   image:
 #     tag: "x.y.z"
+#   livenessProbe:
+#     tcpSocket:
+#       port: http
+#     initialDelaySeconds: 20
+#     periodSeconds: 15
+#   readinessProbe:
+#     tcpSocket:
+#       port: http
+#     initialDelaySeconds: 10
+#     periodSeconds: 10
 #   resources:
 #     requests:
 #       cpu: 100m
@@ -93,6 +143,16 @@ redis:
 # auditservice:
 #   image:
 #     tag: "x.y.z"
+#   livenessProbe:
+#     tcpSocket:
+#       port: http
+#     initialDelaySeconds: 20
+#     periodSeconds: 15
+#   readinessProbe:
+#     tcpSocket:
+#       port: http
+#     initialDelaySeconds: 10
+#     periodSeconds: 10
 #   resources:
 #     requests:
 #       cpu: 100m
@@ -103,6 +163,16 @@ redis:
 # trustservice:
 #   image:
 #     tag: "x.y.z"
+#   livenessProbe:
+#     tcpSocket:
+#       port: http
+#     initialDelaySeconds: 20
+#     periodSeconds: 15
+#   readinessProbe:
+#     tcpSocket:
+#       port: http
+#     initialDelaySeconds: 10
+#     periodSeconds: 10
 #   resources:
 #     requests:
 #       cpu: 100m
@@ -113,6 +183,16 @@ redis:
 # frontend:
 #   image:
 #     tag: "x.y.z"
+#   livenessProbe:
+#     tcpSocket:
+#       port: http
+#     initialDelaySeconds: 20
+#     periodSeconds: 15
+#   readinessProbe:
+#     tcpSocket:
+#       port: http
+#     initialDelaySeconds: 10
+#     periodSeconds: 10
 #   resources:
 #     requests:
 #       cpu: 50m
@@ -133,6 +213,16 @@ notificationIngress:
       secretName: shiftcontrol-tls
 
 notificationservice:
+  livenessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 20
+    periodSeconds: 15
+  readinessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 10
   email:
     enableSending: false
     smtpHost: smtp.gmail.com
@@ -151,6 +241,16 @@ notificationservice:
       memory: 512Mi
 
 auditservice:
+  livenessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 20
+    periodSeconds: 15
+  readinessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 10
   resources:
     requests:
       cpu: 100m
@@ -160,6 +260,16 @@ auditservice:
       memory: 384Mi
 
 trustservice:
+  livenessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 20
+    periodSeconds: 15
+  readinessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 10
   resources:
     requests:
       cpu: 100m
@@ -169,6 +279,16 @@ trustservice:
       memory: 384Mi
 
 frontend:
+  livenessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 20
+    periodSeconds: 15
+  readinessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 10
   resources:
     requests:
       cpu: 50m
@@ -179,6 +299,16 @@ frontend:
 
 pgadmin:
   enabled: false
+  livenessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 20
+    periodSeconds: 15
+  readinessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 10
   ingress:
     enabled: false
   resources:

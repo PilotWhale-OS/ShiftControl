@@ -24,6 +24,8 @@ The chart now ships with restricted Pod Security compatible defaults for workloa
 
 The default `resources` blocks in `values.yaml` now include CPU and memory `requests` and `limits` for every workload so the chart works in namespaces with `ResourceQuota` enforcement. The defaults are balanced so the whole stack stays below 1 CPU / 2 GiB requested and below 2 CPU / 4 GiB limited in total, while still remaining editable through each `<component>.resources` block.
 
+Liveness and readiness probes are configurable per workload through each `<component>.livenessProbe` and `<component>.readinessProbe` block in the values files.
+
 ## Required values
 
 At minimum, set:

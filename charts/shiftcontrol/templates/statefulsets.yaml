@@ -50,16 +50,14 @@ spec:
           ports:
             - name: postgres
               containerPort: {{ .Values.postgres.service.port }}
+          {{- with .Values.postgres.livenessProbe }}
           livenessProbe:
-            tcpSocket:
-              port: postgres
-            initialDelaySeconds: 15
-            periodSeconds: 10
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.postgres.readinessProbe }}
           readinessProbe:
-            tcpSocket:
-              port: postgres
-            initialDelaySeconds: 5
-            periodSeconds: 10
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
@@ -129,16 +127,14 @@ spec:
               containerPort: {{ .Values.rabbitmq.service.amqpPort }}
             - name: management
               containerPort: {{ .Values.rabbitmq.service.managementPort }}
+          {{- with .Values.rabbitmq.livenessProbe }}
           livenessProbe:
-            tcpSocket:
-              port: amqp
-            initialDelaySeconds: 20
-            periodSeconds: 15
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.rabbitmq.readinessProbe }}
           readinessProbe:
-            tcpSocket:
-              port: amqp
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: data
               mountPath: /var/lib/rabbitmq
