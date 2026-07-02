@@ -280,7 +280,7 @@ frontend:
     periodSeconds: 10
   podSecurityContext: {}
   containerSecurityContext:
-    runAsUser: 100
+    runAsUser: 101
   resources:
     requests:
       cpu: 50m
