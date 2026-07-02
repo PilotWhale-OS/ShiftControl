@@ -164,16 +164,6 @@ redis:
 # trustservice:
 #   image:
 #     tag: "x.y.z"
-#   livenessProbe:
-#     tcpSocket:
-#       port: http
-#     initialDelaySeconds: 20
-#     periodSeconds: 15
-#   readinessProbe:
-#     tcpSocket:
-#       port: http
-#     initialDelaySeconds: 10
-#     periodSeconds: 10
 #   resources:
 #     requests:
 #       cpu: 100m
@@ -261,16 +251,6 @@ auditservice:
       memory: 384Mi
 
 trustservice:
-  livenessProbe:
-    tcpSocket:
-      port: http
-    initialDelaySeconds: 20
-    periodSeconds: 15
-  readinessProbe:
-    tcpSocket:
-      port: http
-    initialDelaySeconds: 10
-    periodSeconds: 10
   resources:
     requests:
       cpu: 100m

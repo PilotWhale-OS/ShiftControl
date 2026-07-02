@@ -239,16 +239,6 @@ trustservice:
     pullPolicy: IfNotPresent
   service:
     port: 8080
-  livenessProbe:
-    tcpSocket:
-      port: http
-    initialDelaySeconds: 20
-    periodSeconds: 15
-  readinessProbe:
-    tcpSocket:
-      port: http
-    initialDelaySeconds: 10
-    periodSeconds: 10
   podSecurityContext: {}
   containerSecurityContext: {}
   resources:
