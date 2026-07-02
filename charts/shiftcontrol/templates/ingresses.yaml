@@ -17,20 +17,6 @@ spec:
     - host: {{ .Values.global.domain | quote }}
       http:
         paths:
-          - path: /shiftservice
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "shiftservice") }}
-                port:
-                  number: {{ .Values.shiftservice.service.port }}
-          - path: /auditservice
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "auditservice") }}
-                port:
-                  number: {{ .Values.auditservice.service.port }}
           - path: /
             pathType: Prefix
             backend:
@@ -39,6 +25,48 @@ spec:
                 port:
                   number: {{ .Values.frontend.service.port }}
   {{- with .Values.global.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- if .Values.apiIngress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "api") }}
+  labels:
+    {{- include "shiftcontrol.labels" . | nindent 4 }}
+  annotations:
+    {{- with .Values.global.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with .Values.apiIngress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- with (default .Values.global.ingress.className .Values.apiIngress.className) }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  rules:
+    - host: {{ default .Values.global.domain .Values.apiIngress.host | quote }}
+      http:
+        paths:
+          - path: {{ .Values.apiIngress.shiftservicePath }}
+            pathType: {{ .Values.apiIngress.pathType }}
+            backend:
+              service:
+                name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "shiftservice") }}
+                port:
+                  number: {{ .Values.shiftservice.service.port }}
+          - path: {{ .Values.apiIngress.auditservicePath }}
+            pathType: {{ .Values.apiIngress.pathType }}
+            backend:
+              service:
+                name: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "auditservice") }}
+                port:
+                  number: {{ .Values.auditservice.service.port }}
+  {{- with (default .Values.global.ingress.tls .Values.apiIngress.tls) }}
   tls:
     {{- toYaml . | nindent 4 }}
   {{- end }}

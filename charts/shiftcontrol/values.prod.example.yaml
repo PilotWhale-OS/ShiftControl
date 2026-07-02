@@ -26,6 +26,17 @@ global:
   internalApiKey: change-me-to-a-long-random-secret
   keycloakInternalClientSecret: ""
 
+apiIngress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+  tls:
+    - hosts:
+        - shiftcontrol.site.com
+      secretName: shiftcontrol-tls
+
 postgres:
   auth:
     username: shiftcontrol

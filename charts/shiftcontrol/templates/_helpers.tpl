@@ -101,4 +101,7 @@ app.kubernetes.io/component: {{ .component }}
 {{- if and .Values.notificationIngress.enabled .Values.notificationIngress.host (empty .Values.notificationIngress.tls) }}
   {{- fail "notificationIngress.tls must be set when notificationIngress.host overrides global.domain" }}
 {{- end }}
+{{- if and .Values.apiIngress.enabled .Values.apiIngress.host (empty .Values.apiIngress.tls) }}
+  {{- fail "apiIngress.tls must be set when apiIngress.host overrides global.domain" }}
+{{- end }}
 {{- end -}}

@@ -30,6 +30,18 @@ global:
   internalApiKey: ""
   keycloakInternalClientSecret: ""
 
+apiIngress:
+  enabled: true
+  className: ""
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+  host: ""
+  shiftservicePath: /shiftservice(/|$)(.*)
+  auditservicePath: /auditservice(/|$)(.*)
+  pathType: ImplementationSpecific
+  tls: []
+
 postgres:
   image:
     repository: postgres

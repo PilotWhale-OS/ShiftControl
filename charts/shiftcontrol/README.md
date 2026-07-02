@@ -14,11 +14,12 @@ This chart deploys the production ShiftControl stack on Kubernetes with:
 
 ## Layout
 
-- `global.ingress` exposes the frontend, `shiftservice`, and `auditservice`
+- `global.ingress` exposes the frontend
+- `apiIngress` handles `/shiftservice` and `/auditservice` with prefix-stripping rewrites
 - `notificationIngress` handles `/notifications` separately because that service expects the prefix to be stripped
 - `pgadmin.enabled=false` by default and no `pgAdmin` resources are created unless explicitly enabled
 
-The default `notificationIngress` annotations target the NGINX ingress controller. If your cluster uses a different controller, update or replace that block in your values file.
+The default `apiIngress` and `notificationIngress` annotations target the NGINX ingress controller. If your cluster uses a different controller, update or replace those blocks in your values file.
 
 The chart now ships with restricted Pod Security compatible defaults for workload `securityContext` settings. You can override them globally with `global.podSecurityContext` and `global.containerSecurityContext`, or fine-tune individual workloads with `<component>.podSecurityContext` and `<component>.containerSecurityContext`.
 
@@ -100,6 +101,8 @@ Example:
 shiftservice:
   liquibaseContexts: prod
 ```
+
+The chart defaults to root-mounted backend services behind ingress prefix rewrites. `apiIngress` rewrites `/shiftservice/...` and `/auditservice/...` to `/...` before forwarding to the pods, so in-cluster callers can keep using `http://service:port/` without the public prefix.
 
 If you expose notifications on a different hostname than `global.domain`, also set `notificationIngress.tls` for that host. The chart now validates that combination to avoid mismatched certificates.
 

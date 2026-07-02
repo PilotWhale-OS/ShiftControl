@@ -12,9 +12,6 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${oidc.provider.issuer-uri}
-  mvc:
-    servlet:
-      path: /auditservice
 
 oidc:
   provider:
