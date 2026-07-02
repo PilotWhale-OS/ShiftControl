@@ -103,6 +103,7 @@ redis:
 # shiftservice:
 #   image:
 #     tag: "x.y.z"
+#   liquibaseContexts: prod
 #   livenessProbe:
 #     tcpSocket:
 #       port: http

@@ -9,6 +9,9 @@ spring:
 logging:
   level:
     root: INFO
+mvc:
+  servlet:
+    path: /shiftservice
 
 oidc:
   provider:

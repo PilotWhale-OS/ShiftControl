@@ -26,6 +26,8 @@ The default `resources` blocks in `values.yaml` now include CPU and memory `requ
 
 Liveness and readiness probes are configurable per workload through each `<component>.livenessProbe` and `<component>.readinessProbe` block in the values files.
 
+The shift service exposes `SPRING_LIQUIBASE_CONTEXTS` through `shiftservice.liquibaseContexts` in your values file.
+
 ## Required values
 
 At minimum, set:
@@ -91,6 +93,13 @@ helm install shiftcontrol shiftcontrol/shiftcontrol -f my-values.yaml
 ```
 
 You can start from [`values.prod.example.yaml`](./values.prod.example.yaml) and adjust secrets, storage, and ingress settings for your cluster.
+
+Example:
+
+```yaml
+shiftservice:
+  liquibaseContexts: prod
+```
 
 If you expose notifications on a different hostname than `global.domain`, also set `notificationIngress.tls` for that host. The chart now validates that combination to avoid mismatched certificates.
 
