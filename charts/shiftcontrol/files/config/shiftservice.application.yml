@@ -6,12 +6,12 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${oidc.provider.issuer-uri}
+  mvc:
+    servlet:
+      path: /shiftservice
 logging:
   level:
     root: INFO
-mvc:
-  servlet:
-    path: /shiftservice
 
 oidc:
   provider:
