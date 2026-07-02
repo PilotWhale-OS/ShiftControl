@@ -22,6 +22,8 @@ The default `notificationIngress` annotations target the NGINX ingress controlle
 
 The chart now ships with restricted Pod Security compatible defaults for workload `securityContext` settings. You can override them globally with `global.podSecurityContext` and `global.containerSecurityContext`, or fine-tune individual workloads with `<component>.podSecurityContext` and `<component>.containerSecurityContext`.
 
+The default `resources` blocks in `values.yaml` now include CPU and memory `requests` and `limits` for every workload so the chart works in namespaces with `ResourceQuota` enforcement. The defaults are balanced so the whole stack stays below 1 CPU / 2 GiB requested and below 2 CPU / 4 GiB limited in total, while still remaining editable through each `<component>.resources` block.
+
 ## Required values
 
 At minimum, set:

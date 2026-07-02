@@ -37,28 +37,86 @@ postgres:
   containerSecurityContext:
     runAsUser: 999
     runAsGroup: 999
+  resources:
+    requests:
+      cpu: 200m
+      memory: 384Mi
+    limits:
+      cpu: 500m
+      memory: 768Mi
 
 rabbitmq:
   auth:
     username: shiftcontrol
     password: change-me
+  resources:
+    requests:
+      cpu: 150m
+      memory: 256Mi
+    limits:
+      cpu: 300m
+      memory: 512Mi
+
+redis:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi
 
 # Pin application image tags here for reproducible production deployments.
 # shiftservice:
 #   image:
 #     tag: "x.y.z"
+#   resources:
+#     requests:
+#       cpu: 100m
+#       memory: 192Mi
+#     limits:
+#       cpu: 200m
+#       memory: 384Mi
 # notificationservice:
 #   image:
 #     tag: "x.y.z"
+#   resources:
+#     requests:
+#       cpu: 100m
+#       memory: 192Mi
+#     limits:
+#       cpu: 250m
+#       memory: 512Mi
 # auditservice:
 #   image:
 #     tag: "x.y.z"
+#   resources:
+#     requests:
+#       cpu: 100m
+#       memory: 192Mi
+#     limits:
+#       cpu: 200m
+#       memory: 384Mi
 # trustservice:
 #   image:
 #     tag: "x.y.z"
+#   resources:
+#     requests:
+#       cpu: 100m
+#       memory: 192Mi
+#     limits:
+#       cpu: 200m
+#       memory: 384Mi
 # frontend:
 #   image:
 #     tag: "x.y.z"
+#   resources:
+#     requests:
+#       cpu: 50m
+#       memory: 128Mi
+#     limits:
+#       cpu: 100m
+#       memory: 256Mi
 
 notificationIngress:
   enabled: true
@@ -81,8 +139,49 @@ notificationservice:
     fromName: ShiftControl Notifications
     fromEmail: noreply@shiftcontrol.site.com
     secureSocketOptions: StartTls
+  resources:
+    requests:
+      cpu: 100m
+      memory: 192Mi
+    limits:
+      cpu: 250m
+      memory: 512Mi
+
+auditservice:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 192Mi
+    limits:
+      cpu: 200m
+      memory: 384Mi
+
+trustservice:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 192Mi
+    limits:
+      cpu: 200m
+      memory: 384Mi
+
+frontend:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi
 
 pgadmin:
   enabled: false
   ingress:
     enabled: false
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi

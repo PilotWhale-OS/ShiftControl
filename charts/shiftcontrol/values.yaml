@@ -52,7 +52,13 @@ postgres:
   containerSecurityContext:
     runAsUser: 999
     runAsGroup: 999
-  resources: {}
+  resources:
+    requests:
+      cpu: 200m
+      memory: 384Mi
+    limits:
+      cpu: 500m
+      memory: 768Mi
 
 rabbitmq:
   image:
@@ -70,7 +76,13 @@ rabbitmq:
     accessMode: ReadWriteOnce
     size: 8Gi
     storageClass: ""
-  resources: {}
+  resources:
+    requests:
+      cpu: 150m
+      memory: 256Mi
+    limits:
+      cpu: 300m
+      memory: 512Mi
 
 redis:
   image:
@@ -81,7 +93,13 @@ redis:
     port: 6379
   podSecurityContext: {}
   containerSecurityContext: {}
-  resources: {}
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi
 
 shiftservice:
   replicaCount: 1
@@ -94,7 +112,13 @@ shiftservice:
   liquibaseContexts: prod
   podSecurityContext: {}
   containerSecurityContext: {}
-  resources: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 192Mi
+    limits:
+      cpu: 200m
+      memory: 384Mi
   extraEnv: []
 
 notificationservice:
@@ -116,7 +140,13 @@ notificationservice:
     secureSocketOptions: StartTls
   podSecurityContext: {}
   containerSecurityContext: {}
-  resources: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 192Mi
+    limits:
+      cpu: 250m
+      memory: 512Mi
   extraEnv: []
 
 auditservice:
@@ -129,7 +159,13 @@ auditservice:
     port: 8089
   podSecurityContext: {}
   containerSecurityContext: {}
-  resources: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 192Mi
+    limits:
+      cpu: 200m
+      memory: 384Mi
   extraEnv: []
 
 trustservice:
@@ -142,7 +178,13 @@ trustservice:
     port: 8080
   podSecurityContext: {}
   containerSecurityContext: {}
-  resources: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 192Mi
+    limits:
+      cpu: 200m
+      memory: 384Mi
   extraEnv: []
 
 frontend:
@@ -155,7 +197,13 @@ frontend:
     port: 8080
   podSecurityContext: {}
   containerSecurityContext: {}
-  resources: {}
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi
   extraEnv: []
 
 notificationIngress:
@@ -195,4 +243,10 @@ pgadmin:
     tls: []
   podSecurityContext: {}
   containerSecurityContext: {}
-  resources: {}
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi
