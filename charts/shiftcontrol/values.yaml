@@ -7,6 +7,15 @@ global:
   domain: shiftcontrol.example.com
   scheme: https
   imagePullSecrets: []
+  podSecurityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
   ingress:
     enabled: true
     className: ""
@@ -38,6 +47,11 @@ postgres:
     accessMode: ReadWriteOnce
     size: 8Gi
     storageClass: ""
+  podSecurityContext:
+    fsGroup: 999
+  containerSecurityContext:
+    runAsUser: 999
+    runAsGroup: 999
   resources: {}
 
 rabbitmq:
@@ -65,6 +79,8 @@ redis:
     pullPolicy: IfNotPresent
   service:
     port: 6379
+  podSecurityContext: {}
+  containerSecurityContext: {}
   resources: {}
 
 shiftservice:
@@ -76,6 +92,8 @@ shiftservice:
   service:
     port: 8080
   liquibaseContexts: prod
+  podSecurityContext: {}
+  containerSecurityContext: {}
   resources: {}
   extraEnv: []
 
@@ -96,6 +114,8 @@ notificationservice:
     fromName: ShiftControl Notifications
     fromEmail: noreply@example.com
     secureSocketOptions: StartTls
+  podSecurityContext: {}
+  containerSecurityContext: {}
   resources: {}
   extraEnv: []
 
@@ -107,6 +127,8 @@ auditservice:
     pullPolicy: IfNotPresent
   service:
     port: 8089
+  podSecurityContext: {}
+  containerSecurityContext: {}
   resources: {}
   extraEnv: []
 
@@ -118,6 +140,8 @@ trustservice:
     pullPolicy: IfNotPresent
   service:
     port: 8080
+  podSecurityContext: {}
+  containerSecurityContext: {}
   resources: {}
   extraEnv: []
 
@@ -129,6 +153,8 @@ frontend:
     pullPolicy: IfNotPresent
   service:
     port: 8080
+  podSecurityContext: {}
+  containerSecurityContext: {}
   resources: {}
   extraEnv: []
 
@@ -167,4 +193,6 @@ pgadmin:
     path: /
     pathType: Prefix
     tls: []
+  podSecurityContext: {}
+  containerSecurityContext: {}
   resources: {}

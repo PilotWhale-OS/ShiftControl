@@ -20,6 +20,8 @@ This chart deploys the production ShiftControl stack on Kubernetes with:
 
 The default `notificationIngress` annotations target the NGINX ingress controller. If your cluster uses a different controller, update or replace that block in your values file.
 
+The chart now ships with restricted Pod Security compatible defaults for workload `securityContext` settings. You can override them globally with `global.podSecurityContext` and `global.containerSecurityContext`, or fine-tune individual workloads with `<component>.podSecurityContext` and `<component>.containerSecurityContext`.
+
 ## Required values
 
 At minimum, set:

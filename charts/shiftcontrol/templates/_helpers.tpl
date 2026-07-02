@@ -58,6 +58,24 @@ app.kubernetes.io/component: {{ .component }}
 {{- printf "%s://%s" .Values.global.scheme .Values.global.domain -}}
 {{- end -}}
 
+{{- define "shiftcontrol.podSecurityContext" -}}
+{{- $global := deepCopy (default dict .root.Values.global.podSecurityContext) -}}
+{{- $component := default dict .componentSecurityContext -}}
+{{- $merged := mergeOverwrite $global $component -}}
+{{- if not (empty $merged) -}}
+{{- toYaml $merged -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "shiftcontrol.containerSecurityContext" -}}
+{{- $global := deepCopy (default dict .root.Values.global.containerSecurityContext) -}}
+{{- $component := default dict .componentSecurityContext -}}
+{{- $merged := mergeOverwrite $global $component -}}
+{{- if not (empty $merged) -}}
+{{- toYaml $merged -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "shiftcontrol.validateValues" -}}
 {{- if not .Values.existingSecret }}
   {{- if not .Values.global.internalApiKey }}

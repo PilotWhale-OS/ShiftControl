@@ -19,10 +19,18 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with (include "shiftcontrol.podSecurityContext" (dict "root" . "componentSecurityContext" .Values.postgres.podSecurityContext) | fromYaml) }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: postgres
           image: "{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
           imagePullPolicy: {{ .Values.postgres.image.pullPolicy }}
+          {{- with (include "shiftcontrol.containerSecurityContext" (dict "root" . "componentSecurityContext" .Values.postgres.containerSecurityContext) | fromYaml) }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           env:
             - name: POSTGRES_USER
               valueFrom:
@@ -90,10 +98,18 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with (include "shiftcontrol.podSecurityContext" (dict "root" . "componentSecurityContext" .Values.rabbitmq.podSecurityContext) | fromYaml) }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: rabbitmq
           image: "{{ .Values.rabbitmq.image.repository }}:{{ .Values.rabbitmq.image.tag }}"
           imagePullPolicy: {{ .Values.rabbitmq.image.pullPolicy }}
+          {{- with (include "shiftcontrol.containerSecurityContext" (dict "root" . "componentSecurityContext" .Values.rabbitmq.containerSecurityContext) | fromYaml) }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           env:
             - name: RABBITMQ_DEFAULT_USER
               valueFrom:

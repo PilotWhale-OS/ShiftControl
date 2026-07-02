@@ -1,6 +1,15 @@
 global:
   domain: shiftcontrol.site.com
   scheme: https
+  podSecurityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
   ingress:
     enabled: true
     className: nginx
@@ -23,6 +32,11 @@ postgres:
     password: change-me
     database: shiftservice
     notificationDatabase: notificationservice
+  podSecurityContext:
+    fsGroup: 999
+  containerSecurityContext:
+    runAsUser: 999
+    runAsGroup: 999
 
 rabbitmq:
   auth:

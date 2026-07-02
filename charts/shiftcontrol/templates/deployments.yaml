@@ -18,10 +18,18 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with (include "shiftcontrol.podSecurityContext" (dict "root" . "componentSecurityContext" .Values.redis.podSecurityContext) | fromYaml) }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: redis
           image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
           imagePullPolicy: {{ .Values.redis.image.pullPolicy }}
+          {{- with (include "shiftcontrol.containerSecurityContext" (dict "root" . "componentSecurityContext" .Values.redis.containerSecurityContext) | fromYaml) }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           ports:
             - name: redis
               containerPort: {{ .Values.redis.service.port }}
@@ -58,10 +66,18 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with (include "shiftcontrol.podSecurityContext" (dict "root" . "componentSecurityContext" .Values.shiftservice.podSecurityContext) | fromYaml) }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: shiftservice
           image: "{{ .Values.shiftservice.image.repository }}:{{ .Values.shiftservice.image.tag }}"
           imagePullPolicy: {{ .Values.shiftservice.image.pullPolicy }}
+          {{- with (include "shiftcontrol.containerSecurityContext" (dict "root" . "componentSecurityContext" .Values.shiftservice.containerSecurityContext) | fromYaml) }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           env:
             - name: SHIFTCONTROL_DOMAIN
               value: {{ .Values.global.domain | quote }}
@@ -139,10 +155,18 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with (include "shiftcontrol.podSecurityContext" (dict "root" . "componentSecurityContext" .Values.notificationservice.podSecurityContext) | fromYaml) }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: notificationservice
           image: "{{ .Values.notificationservice.image.repository }}:{{ .Values.notificationservice.image.tag }}"
           imagePullPolicy: {{ .Values.notificationservice.image.pullPolicy }}
+          {{- with (include "shiftcontrol.containerSecurityContext" (dict "root" . "componentSecurityContext" .Values.notificationservice.containerSecurityContext) | fromYaml) }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           env:
             - name: EMPTY
               value: empty
@@ -279,10 +303,18 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with (include "shiftcontrol.podSecurityContext" (dict "root" . "componentSecurityContext" .Values.auditservice.podSecurityContext) | fromYaml) }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: auditservice
           image: "{{ .Values.auditservice.image.repository }}:{{ .Values.auditservice.image.tag }}"
           imagePullPolicy: {{ .Values.auditservice.image.pullPolicy }}
+          {{- with (include "shiftcontrol.containerSecurityContext" (dict "root" . "componentSecurityContext" .Values.auditservice.containerSecurityContext) | fromYaml) }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           env:
             - name: SHIFTCONTROL_DOMAIN
               value: {{ .Values.global.domain | quote }}
@@ -367,10 +399,18 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with (include "shiftcontrol.podSecurityContext" (dict "root" . "componentSecurityContext" .Values.trustservice.podSecurityContext) | fromYaml) }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: trustservice
           image: "{{ .Values.trustservice.image.repository }}:{{ .Values.trustservice.image.tag }}"
           imagePullPolicy: {{ .Values.trustservice.image.pullPolicy }}
+          {{- with (include "shiftcontrol.containerSecurityContext" (dict "root" . "componentSecurityContext" .Values.trustservice.containerSecurityContext) | fromYaml) }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           env:
             - name: SHIFTCONTROL_DOMAIN
               value: {{ .Values.global.domain | quote }}
@@ -471,10 +511,18 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with (include "shiftcontrol.podSecurityContext" (dict "root" . "componentSecurityContext" .Values.frontend.podSecurityContext) | fromYaml) }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: frontend
           image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
           imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+          {{- with (include "shiftcontrol.containerSecurityContext" (dict "root" . "componentSecurityContext" .Values.frontend.containerSecurityContext) | fromYaml) }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           env:
             - name: KEYCLOAK_URL
               value: {{ .Values.global.oidc.baseUrl | quote }}
@@ -528,10 +576,18 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with (include "shiftcontrol.podSecurityContext" (dict "root" . "componentSecurityContext" .Values.pgadmin.podSecurityContext) | fromYaml) }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: pgadmin
           image: "{{ .Values.pgadmin.image.repository }}:{{ .Values.pgadmin.image.tag }}"
           imagePullPolicy: {{ .Values.pgadmin.image.pullPolicy }}
+          {{- with (include "shiftcontrol.containerSecurityContext" (dict "root" . "componentSecurityContext" .Values.pgadmin.containerSecurityContext) | fromYaml) }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           env:
             - name: PGADMIN_DEFAULT_EMAIL
               valueFrom:
