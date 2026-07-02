@@ -40,6 +40,9 @@ postgres:
     password: ""
     database: shiftservice
     notificationDatabase: notificationservice
+  extraEnv:
+    - name: PGDATA
+      value: /var/lib/postgresql/data/pgdata
   service:
     port: 5432
   persistence:
@@ -196,7 +199,8 @@ frontend:
   service:
     port: 8080
   podSecurityContext: {}
-  containerSecurityContext: {}
+  containerSecurityContext:
+    runAsUser: 100
   resources:
     requests:
       cpu: 50m
