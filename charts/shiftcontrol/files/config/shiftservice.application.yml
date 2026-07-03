@@ -2,8 +2,7 @@ spring:
   jackson:
     default-property-inclusion: non_null
   rabbitmq:
-    host: {{ include "shiftcontrol.rabbitmqHost" . }}
-    port: {{ .Values.rabbitmq.service.amqpPort }}
+    addresses: {{ printf "%s:%v" (include "shiftcontrol.rabbitmqHost" .) .Values.rabbitmq.service.amqpPort }}
     username: ${RABBITMQ_DEFAULT_USER}
     password: ${RABBITMQ_DEFAULT_PASS}
   security:

@@ -114,10 +114,8 @@ spec:
               value: "$(POSTGRES_USER)"
             - name: SPRING_DATASOURCE_PASSWORD
               value: "$(POSTGRES_PASSWORD)"
-            - name: SPRING_RABBITMQ_HOST
-              value: {{ include "shiftcontrol.rabbitmqHost" . | quote }}
-            - name: SPRING_RABBITMQ_PORT
-              value: {{ .Values.rabbitmq.service.amqpPort | quote }}
+            - name: SPRING_RABBITMQ_ADDRESSES
+              value: {{ printf "%s:%v" (include "shiftcontrol.rabbitmqHost" .) .Values.rabbitmq.service.amqpPort | quote }}
             - name: SPRING_RABBITMQ_USERNAME
               value: "$(RABBITMQ_DEFAULT_USER)"
             - name: SPRING_RABBITMQ_PASSWORD
