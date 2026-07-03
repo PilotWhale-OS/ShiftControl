@@ -115,7 +115,7 @@ spec:
             - name: SPRING_DATASOURCE_PASSWORD
               value: "$(POSTGRES_PASSWORD)"
             - name: SPRING_RABBITMQ_ADDRESSES
-              value: {{ printf "%s:%v" (include "shiftcontrol.rabbitmqHost" .) .Values.rabbitmq.service.amqpPort | quote }}
+              value: {{ include "shiftcontrol.rabbitmqAddress" . | quote }}
             - name: SPRING_RABBITMQ_USERNAME
               value: "$(RABBITMQ_DEFAULT_USER)"
             - name: SPRING_RABBITMQ_PASSWORD
@@ -358,10 +358,8 @@ spec:
               value: "$(POSTGRES_USER)"
             - name: SPRING_DATASOURCE_PASSWORD
               value: "$(POSTGRES_PASSWORD)"
-            - name: SPRING_RABBITMQ_HOST
-              value: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "rabbitmq") | quote }}
-            - name: SPRING_RABBITMQ_PORT
-              value: {{ .Values.rabbitmq.service.amqpPort | quote }}
+            - name: SPRING_RABBITMQ_ADDRESSES
+              value: {{ include "shiftcontrol.rabbitmqAddress" . | quote }}
           {{- with .Values.auditservice.extraEnv }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -468,10 +466,8 @@ spec:
               value: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "redis") | quote }}
             - name: SPRING_DATA_REDIS_PORT
               value: {{ .Values.redis.service.port | quote }}
-            - name: SPRING_RABBITMQ_HOST
-              value: {{ include "shiftcontrol.componentFullname" (dict "root" . "component" "rabbitmq") | quote }}
-            - name: SPRING_RABBITMQ_PORT
-              value: {{ .Values.rabbitmq.service.amqpPort | quote }}
+            - name: SPRING_RABBITMQ_ADDRESSES
+              value: {{ include "shiftcontrol.rabbitmqAddress" . | quote }}
           {{- with .Values.trustservice.extraEnv }}
             {{- toYaml . | nindent 12 }}
           {{- end }}

@@ -62,6 +62,10 @@ app.kubernetes.io/component: {{ .component }}
 {{- include "shiftcontrol.componentFullname" (dict "root" . "component" "rabbitmq") -}}
 {{- end -}}
 
+{{- define "shiftcontrol.rabbitmqAddress" -}}
+{{- printf "%s:%v" (include "shiftcontrol.rabbitmqHost" .) .Values.rabbitmq.service.amqpPort -}}
+{{- end -}}
+
 {{- define "shiftcontrol.podSecurityContext" -}}
 {{- $global := deepCopy (default dict .root.Values.global.podSecurityContext) -}}
 {{- $component := default dict .componentSecurityContext -}}
