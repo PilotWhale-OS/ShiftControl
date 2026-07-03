@@ -6,7 +6,7 @@ metadata:
     {{- include "shiftcontrol.componentLabels" (dict "root" . "component" "shiftservice") | nindent 4 }}
 data:
   application.yml: |
-{{ .Files.Get "files/config/shiftservice.application.yml" | indent 4 }}
+{{ tpl (.Files.Get "files/config/shiftservice.application.yml") . | indent 4 }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -16,7 +16,7 @@ metadata:
     {{- include "shiftcontrol.componentLabels" (dict "root" . "component" "auditservice") | nindent 4 }}
 data:
   application.yml: |
-{{ .Files.Get "files/config/auditservice.application.yml" | indent 4 }}
+{{ tpl (.Files.Get "files/config/auditservice.application.yml") . | indent 4 }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -26,7 +26,7 @@ metadata:
     {{- include "shiftcontrol.componentLabels" (dict "root" . "component" "trustservice") | nindent 4 }}
 data:
   application.yml: |
-{{ .Files.Get "files/config/trustservice.application.yml" | indent 4 }}
+{{ tpl (.Files.Get "files/config/trustservice.application.yml") . | indent 4 }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -36,7 +36,7 @@ metadata:
     {{- include "shiftcontrol.componentLabels" (dict "root" . "component" "notificationservice") | nindent 4 }}
 data:
   appsettings.json: |
-{{ .Files.Get "files/config/notificationservice.appsettings.json" | indent 4 }}
+{{ tpl (.Files.Get "files/config/notificationservice.appsettings.json") . | indent 4 }}
 ---
 apiVersion: v1
 kind: ConfigMap

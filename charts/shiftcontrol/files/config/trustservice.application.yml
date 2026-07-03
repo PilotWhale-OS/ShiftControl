@@ -1,7 +1,7 @@
 spring:
   rabbitmq:
-    host: rabbitmq
-    port: 5672
+    host: {{ include "shiftcontrol.rabbitmqHost" . }}
+    port: {{ .Values.rabbitmq.service.amqpPort }}
     username: ${RABBITMQ_DEFAULT_USER}
     password: ${RABBITMQ_DEFAULT_PASS}
   jpa:

@@ -18,8 +18,8 @@
     ]
   },
   "RabbitMQ": {
-    "HostName": "rabbitmq",
-    "Port": 5672,
+    "HostName": "{{ include "shiftcontrol.rabbitmqHost" . }}",
+    "Port": {{ .Values.rabbitmq.service.amqpPort }},
     "UserName": "",
     "Password": ""
   },
