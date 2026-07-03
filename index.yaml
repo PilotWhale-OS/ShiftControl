@@ -3,6 +3,17 @@ entries:
   shiftcontrol:
   - apiVersion: v2
     appVersion: latest
+    created: "2026-07-03T09:37:22.607726396Z"
+    description: Production Helm chart for ShiftControl with external OIDC and Kubernetes-native
+      ingress routing
+    digest: 1762bbfcb51393073c08534101295b2d8c7911d2b75136595034a399305a2dba
+    name: shiftcontrol
+    type: application
+    urls:
+    - https://github.com/PilotWhale-OS/ShiftControl/releases/download/shiftcontrol-0.2.7/shiftcontrol-0.2.7.tgz
+    version: 0.2.7
+  - apiVersion: v2
+    appVersion: latest
     created: "2026-07-02T21:44:37.346782318Z"
     description: Production Helm chart for ShiftControl with external OIDC and Kubernetes-native
       ingress routing
@@ -144,4 +155,4 @@ entries:
     urls:
     - https://github.com/PilotWhale-OS/ShiftControl/releases/download/shiftcontrol-0.1.1/shiftcontrol-0.1.1.tgz
     version: 0.1.1
-generated: "2026-07-02T21:44:37.346872647Z"
+generated: "2026-07-03T09:37:22.607796116Z"
