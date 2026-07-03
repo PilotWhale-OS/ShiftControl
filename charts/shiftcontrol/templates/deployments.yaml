@@ -81,6 +81,16 @@ spec:
               value: {{ .Values.global.domain | quote }}
             - name: SHIFTCONTROL_OIDC_ISSUER_URI
               value: {{ .Values.global.oidc.issuerUri | quote }}
+            - name: RABBITMQ_DEFAULT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: rabbitmq-username
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shiftcontrol.secretName" . }}
+                  key: rabbitmq-password
             - name: SHIFTCONTROL_INTERNAL_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -104,6 +114,14 @@ spec:
               value: "$(POSTGRES_USER)"
             - name: SPRING_DATASOURCE_PASSWORD
               value: "$(POSTGRES_PASSWORD)"
+            - name: SPRING_RABBITMQ_HOST
+              value: {{ include "shiftcontrol.rabbitmqHost" . | quote }}
+            - name: SPRING_RABBITMQ_PORT
+              value: {{ .Values.rabbitmq.service.amqpPort | quote }}
+            - name: SPRING_RABBITMQ_USERNAME
+              value: "$(RABBITMQ_DEFAULT_USER)"
+            - name: SPRING_RABBITMQ_PASSWORD
+              value: "$(RABBITMQ_DEFAULT_PASS)"
             - name: SPRING_LIQUIBASE_CONTEXTS
               value: {{ .Values.shiftservice.liquibaseContexts | quote }}
           {{- with .Values.shiftservice.extraEnv }}
